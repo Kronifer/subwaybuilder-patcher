@@ -131,7 +131,7 @@ originalFilters.forEach((filter) => {
 parksMapConfig = parksMapConfig.replaceAll(`"source-layer": "parks"`, `"source-layer": "landuse"`);
 var gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterMapConfigMod, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
 gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
-gameMainAfterMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports"', '"source-layer": "aerodrome"');
+gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports"', '"source-layer": "aviation"');
 
 console.log('Writing to GameMain.js')
 fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, gameMainAfterParksMapConfigMod, { 'encoding': 'utf-8' });

@@ -1,6 +1,6 @@
 const config = {
   "subwaybuilderLocation": "C:\\Users\\runke\\AppData\\Local\\Programs\\Subway\ Builder\\", // appimage location image on linux or install directory on windows (something like C:\\Users\\[username]\\AppData\\Local\\Programs\\Subway\ Builder)
-  "maptiler_key": "YOUR_MAPTILER_KEY", // your maptiler api key
+  "maptiler_key": "YOUR_KEY", // your maptiler api key
   "places": [
     {
       "code": "YWG",
