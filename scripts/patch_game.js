@@ -80,6 +80,14 @@ const listOfCitiesData = JSON.parse(indexJSContents.substring(indexJSContents.in
 let dataPoints = /(_0xba618f\()(\d{3})(\))/gm;
 console.log("Deobfuscating cities list");
 existingListOfCitiesRaw.matchAll(dataPoints).forEach((match) => {
+  if(parseInt(match[2]) >= 229) {
+    existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' +listOfCitiesData[parseInt(match[2]) - 229] + '"');
+    return;
+  }
+  if(parseInt(match[2]) - 144 >= listOfCitiesData.length) {
+    existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' + listOfCitiesData[parseInt(match[2])-169] + '"');
+    return;
+  }
   existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' + listOfCitiesData[parseInt(match[2])-141] + '"');
 });
 const existingListOfCities = JSON.parse(existingListOfCitiesRaw);
