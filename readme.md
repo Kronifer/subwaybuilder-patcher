@@ -42,6 +42,7 @@ This is a valid `config.js`:
 ```js
 const config = {
   "subwaybuilderLocation": "./Downloads/Subway-Builder/Subway-Builder.AppImage",
+  "maptiler_key": "YOUR_API_KEY", // required to make maps function!
   "places": [
     {
       "code": "YYZ", // not sure if required, but I would use all caps for the code
