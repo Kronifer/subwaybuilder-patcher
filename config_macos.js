@@ -1,5 +1,6 @@
 const config = {
   "subwaybuilderLocation": "/Applications/Subway Builder.app", // appimage location image on linux, .app location on mac or install directory on windows (something like C:\Users\[username]\AppData\Local\Programs\Subway Builder)
+  "maptiler_key": "YOUR_KEY",
   "places": [
     {
       "code": "YYZ",

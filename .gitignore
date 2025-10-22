@@ -6,3 +6,4 @@ raw_data/
 processed_data/*
 !processed_data/.gitkeep
 Subway_Builder*
+config.js

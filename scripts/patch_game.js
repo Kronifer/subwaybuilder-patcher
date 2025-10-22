@@ -43,8 +43,7 @@ if (config.platform == 'linux') {
 };
 
 console.log('Extracting asar contents')
-execSync(`npx @electron/asar extract ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar ${import.meta.dirname}/../patching_working_directory/extracted-asar`)
-
+execSync(`npx @electron/asar extract ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar ${import.meta.dirname}/../patching_working_directory/extracted-asar`);
 console.log('Locating main.js');
 const shouldBeMainJS = import.meta.dirname + '/../patching_working_directory/extracted-asar/dist/main/main.js';
 console.log('Locating index.js')
@@ -65,13 +64,25 @@ if (ENABLE_DEV_TOOLS) {
   fs.writeFileSync(shouldBeMainJS, replacedMainJS, {encoding: 'utf8'});
 }
 
+const mainJSContents = fs.readFileSync(shouldBeMainJS, { encoding: 'utf8' });
+console.log('Patching blocked requests for map tiles');
+var mainJSAfterPatchingBlockedRequests = mainJSContents.replace("/^https:\\/\\/ctiles\\.subwaybuilder\\.com/", "/https:\\/\\/api\\.maptiler\\.com/i, /^https:\\/\\/ctiles\\.subwaybuilder\\.com/");
+mainJSAfterPatchingBlockedRequests = mainJSAfterPatchingBlockedRequests.replace('const _0x2a52d3 = _0x19b9fd["some"]((_0x62f04d) => _0x62f04d["test"](_0x4f434f));', 'const _0x2a52d3 = false;');
+fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/main/main.js`, mainJSAfterPatchingBlockedRequests, { 'encoding': 'utf-8' });
 console.log('Extracting existing list of cities')
 const indexJSContents = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, { encoding: 'utf8' });
 const startOfCitiesArea = indexJSContents.indexOf('const cities = [{') + 'const cities = '.length; // will give us the start of the array
 const endOfCitiesArea = indexJSContents.indexOf('}];', startOfCitiesArea) + 2;
 if (startOfCitiesArea == -1 || endOfCitiesArea == -1) triggerError('code-not-found', 'The list of cities could not be located.');
 
-const existingListOfCities = JSON.parse(indexJSContents.substring(startOfCitiesArea, endOfCitiesArea));
+let existingListOfCitiesRaw = indexJSContents.substring(startOfCitiesArea, endOfCitiesArea);
+const listOfCitiesData = JSON.parse(indexJSContents.substring(indexJSContents.indexOf('_0x50c2ee') + 12, indexJSContents.indexOf("_0x1184 = function()")-4).replace("'{}.constructor(\"return this\")( )'", "\"{}.constructor('return this') ( )\""));
+let dataPoints = /(_0xba618f\()(\d{3})(\))/gm;
+console.log("Deobfuscating cities list");
+existingListOfCitiesRaw.matchAll(dataPoints).forEach((match) => {
+  existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' + listOfCitiesData[parseInt(match[2])-141] + '"');
+});
+const existingListOfCities = JSON.parse(existingListOfCitiesRaw);
 console.log('Modifying existing list of cities and writing placeholder city maps');
 existingListOfCities.push(...config.places.map((place) => {
   fs.cpSync(`${import.meta.dirname}/../placeholder_mapimage.svg`, `${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/city-maps/${place.code.toLowerCase()}.svg`);
@@ -101,10 +112,7 @@ const existingMapConfig = gameMainJSContents.substring(startOfMapConfig, endOfMa
 console.log('Modifying map config');
 const newMapConfig = existingMapConfig
   .replaceAll(/\[(tilesUrl|foundationTilesUrl)\]/g, JSON.stringify([
-    'https://v4mapa.piemadd.com/20251013/{z}/{x}/{y}.mvt',
-    'https://v4mapb.piemadd.com/20251013/{z}/{x}/{y}.mvt',
-    'https://v4mapc.piemadd.com/20251013/{z}/{x}/{y}.mvt',
-    'https://v4mapd.piemadd.com/20251013/{z}/{x}/{y}.mvt',
+    'https://api.maptiler.com/tiles/v4/{z}/{x}/{y}.pbf?key=' + config.maptiler_key,
   ]))
   .replaceAll('maxzoom: 16', 'maxzoom: 15');
 const gameMainAfterMapConfigMod = stringReplaceAt(gameMainJSContents, startOfMapConfig, endOfMapConfig, newMapConfig);
@@ -121,8 +129,9 @@ originalFilters.forEach((filter) => {
   parksMapConfig = parksMapConfig.replace(filter, `["==", ["get", "kind"], "park"]`);
 });
 parksMapConfig = parksMapConfig.replaceAll(`"source-layer": "parks"`, `"source-layer": "landuse"`);
-const gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterMapConfigMod, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
-// end of maps coloring
+var gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterMapConfigMod, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
+gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
+gameMainAfterMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports"', '"source-layer": "aerodrome"');
 
 console.log('Writing to GameMain.js')
 fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, gameMainAfterParksMapConfigMod, { 'encoding': 'utf-8' });
