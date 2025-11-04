@@ -61,7 +61,7 @@ export default config;
 ## Running Scripts
 There are many scripts. Great scripts. Wonderful scripts. You don't need to run them all, but you certainly can.
 
-### Download Tiles (REQUIRES PMTILES CLI EXECUTABLE TO BE IN TOP DIRECTORY)
+### Download Tiles (REQUIRES PMTILES CLI EXECUTABLE TO BE IN "map_tiles" DIRECTORY)
 > `node ./scripts/download_tiles.js`
 
 Downloads map tiles for places specified in `config.js` to be served by `pmtiles`. To play the game with map tiles, run `scripts/serve.ps1` or `scripts/serve.sh` from a terminal or file manager.
