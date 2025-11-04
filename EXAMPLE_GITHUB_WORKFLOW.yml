@@ -1,0 +1,48 @@
+# If you put this in a Github repo and upload the downloaded tiles from map_tiles, this will merge them into a single PMTiles file, required for the patcher
+
+name: Merge PMTiles
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  Merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v4
+        id: cache-load
+        with:
+          path: tippecanoe
+          key: tile-join-build
+
+      - name: Build TippeCanoe
+        if: steps.cache-load.outputs.cache-hit != 'true'
+        run: |
+          sudo apt update
+          sudo apt-get install gcc g++ make libsqlite3-dev zlib1g-dev git
+          git clone https://github.com/felt/tippecanoe --depth=1
+          cd tippecanoe
+          make tile-join
+      - uses: actions/cache/save@v4
+        if: steps.cache-load.outputs.cache-hit != 'true'
+        with:
+          path: tippecanoe
+          key: tile-join-build
+      - name: Merge Tiles
+        run: |
+          cd tippecanoe
+          mv ./tile-join $GITHUB_WORKSPACE
+          cd $GITHUB_WORKSPACE
+          ./tile-join -o merged.pmtiles *.pmtiles
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: merged.pmtiles
+          path: merged.pmtiles

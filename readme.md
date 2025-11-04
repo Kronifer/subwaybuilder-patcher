@@ -65,6 +65,7 @@ There are many scripts. Great scripts. Wonderful scripts. You don't need to run 
 > `node ./scripts/download_tiles.js`
 
 Downloads map tiles for places specified in `config.js` to be served by `pmtiles`. To play the game with map tiles, run `scripts/serve.ps1` or `scripts/serve.sh` from a terminal or file manager.
+**NOTE: You will need to merge all the downloaded pieces into a single file called `merged.pmtiles` yourself. See the Example Github workflow for a way to do this without too much work.**
 
 
 ### Download Data
