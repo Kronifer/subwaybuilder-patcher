@@ -1,6 +1,6 @@
 # SubwayBuilder Patcher
 
-Self explanatory title. Patches other cities into subway builder. You need to own the game already and have it on your machine. I might extend this to add features and such to subwaybuilder. I don't know. Its 9pm on a thursday as I type this. I don't even know what I'm having for lunch tomorrow; I definitely don't know where this project will be within a week.
+Self explanatory title. Patches other cities into subway builder. You need to own the game already and have it on your machine. I might extend this to add features and such to subwaybuilder. I don't know. Its 9pm on a thursday as I type this. I don't even know what I'm having for lunch tomorrow; I definitely don't know where this project will be within a week. **NOTE: THIS VERSION EXPECTS YOU TO SELFHOST A MERGED PMTILES FILE USING THE PMTILES CLI**
 
 ## Support
 This tool will patch an appimage (linux) or create a modified version of the install directory. I would add support for macos, but the best I can do is generate a folder that macos users *should* be able to bring into their install folder. I have no clue though. The vodka lemonades are speaking to me.
@@ -60,6 +60,12 @@ export default config;
 
 ## Running Scripts
 There are many scripts. Great scripts. Wonderful scripts. You don't need to run them all, but you certainly can.
+
+### Download Tiles (REQUIRES PMTILES CLI EXECUTABLE TO BE IN TOP DIRECTORY)
+> `node ./scripts/download_tiles.js`
+
+Downloads map tiles for places specified in `config.js` to be served by `pmtiles`. To play the game with map tiles, run `scripts/serve.ps1` or `scripts/serve.sh` from a terminal or file manager.
+
 
 ### Download Data
 > `node ./scripts/download_data.js`

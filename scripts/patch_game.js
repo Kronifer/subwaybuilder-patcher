@@ -56,45 +56,30 @@ if (shouldBeIndexJS.length == 0 || shouldBeGameMainJS.length == 0) {
   triggerError('file-not-found');
 }
 
-if (ENABLE_DEV_TOOLS) {
-  if (!fs.existsSync(shouldBeMainJS)) triggerError('file-not-found', 'main.js could not be located in the game files.');
-  console.log('Enabling dev tools')
-  const originalMainJS = fs.readFileSync(shouldBeMainJS, {encoding: 'utf8'});
-  const replacedMainJS = originalMainJS.replace('isDev || process["env"]["DEBUG_PROD"]', 'isDev || process["env"]["DEBUG_PROD"] || true');
-  fs.writeFileSync(shouldBeMainJS, replacedMainJS, {encoding: 'utf8'});
-}
+//if (ENABLE_DEV_TOOLS) {
+//  if (!fs.existsSync(shouldBeMainJS)) triggerError('file-not-found', 'main.js could not be located in the game files.');
+//  console.log('Enabling dev tools')
+//  const originalMainJS = fs.readFileSync(shouldBeMainJS, {encoding: 'utf8'});
+//  const replacedMainJS = originalMainJS.replace('isDev || process["env"]["DEBUG_PROD"]', 'isDev || process["env"]["DEBUG_PROD"] || true');
+//  fs.writeFileSync(shouldBeMainJS, replacedMainJS, {encoding: 'utf8'});
+//}
 
-const mainJSContents = fs.readFileSync(shouldBeMainJS, { encoding: 'utf8' });
-console.log('Patching blocked requests for map tiles');
-var mainJSAfterPatchingBlockedRequests = mainJSContents.replace("/^https:\\/\\/ctiles\\.subwaybuilder\\.com/", "/https:\\/\\/api\\.maptiler\\.com/i, /^https:\\/\\/ctiles\\.subwaybuilder\\.com/");
-mainJSAfterPatchingBlockedRequests = mainJSAfterPatchingBlockedRequests.replace('const _0x2a52d3 = _0x19b9fd["some"]((_0x62f04d) => _0x62f04d["test"](_0x4f434f));', 'const _0x2a52d3 = false;');
-fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/main/main.js`, mainJSAfterPatchingBlockedRequests, { 'encoding': 'utf-8' });
+//const mainJSContents = fs.readFileSync(shouldBeMainJS, { encoding: 'utf8' });
+//console.log('Patching blocked requests for map tiles');
+//var mainJSAfterPatchingBlockedRequests = mainJSContents.replace("/^https:\\/\\/ctiles\\.subwaybuilder\\.com/", "/http:\\/\\/127\\.0\\.0\\.1/i, /^https:\\/\\/ctiles\\.subwaybuilder\\.com/");
+//mainJSAfterPatchingBlockedRequests = mainJSAfterPatchingBlockedRequests.replace('const _0x2a52d3 = _0x19b9fd["some"]((_0x62f04d) => _0x62f04d["test"](_0x4f434f));', 'const _0x2a52d3 = false;');
+//fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/main/main.js`, mainJSAfterPatchingBlockedRequests, { 'encoding': 'utf-8' });
 console.log('Extracting existing list of cities')
 const indexJSContents = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, { encoding: 'utf8' });
 const startOfCitiesArea = indexJSContents.indexOf('const cities = [{') + 'const cities = '.length; // will give us the start of the array
 const endOfCitiesArea = indexJSContents.indexOf('}];', startOfCitiesArea) + 2;
 if (startOfCitiesArea == -1 || endOfCitiesArea == -1) triggerError('code-not-found', 'The list of cities could not be located.');
 
-let existingListOfCitiesRaw = indexJSContents.substring(startOfCitiesArea, endOfCitiesArea);
-const listOfCitiesData = JSON.parse(indexJSContents.substring(indexJSContents.indexOf('_0x50c2ee') + 12, indexJSContents.indexOf("_0x1184 = function()")-4).replace("'{}.constructor(\"return this\")( )'", "\"{}.constructor('return this') ( )\""));
-let dataPoints = /(_0xba618f\()(\d{3})(\))/gm;
-console.log("Deobfuscating cities list");
-existingListOfCitiesRaw.matchAll(dataPoints).forEach((match) => {
-  if(parseInt(match[2]) >= 229) {
-    existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' +listOfCitiesData[parseInt(match[2]) - 229] + '"');
-    return;
-  }
-  if(parseInt(match[2]) - 144 >= listOfCitiesData.length) {
-    existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' + listOfCitiesData[parseInt(match[2])-169] + '"');
-    return;
-  }
-  existingListOfCitiesRaw = existingListOfCitiesRaw.replace(match[0], '"' + listOfCitiesData[parseInt(match[2])-141] + '"');
-});
-const existingListOfCities = JSON.parse(existingListOfCitiesRaw);
+let existingListOfCitiesRaw = indexJSContents.substring(startOfCitiesArea, endOfCitiesArea-1) + ", ";
 console.log('Modifying existing list of cities and writing placeholder city maps');
-existingListOfCities.push(...config.places.map((place) => {
+config.places.forEach((place) => {
   fs.cpSync(`${import.meta.dirname}/../placeholder_mapimage.svg`, `${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/city-maps/${place.code.toLowerCase()}.svg`);
-  return {
+  existingListOfCitiesRaw += JSON.stringify({
     name: place.name,
     code: place.code,
     description: place.description,
@@ -105,10 +90,11 @@ existingListOfCities.push(...config.places.map((place) => {
       longitude: (place.bbox[0] + place.bbox[2]) / 2,
       bearing: 0,
     }
-  }
-}));
+  }) + ", ";
+});
+const existingListOfCities = existingListOfCitiesRaw.slice(0, -2) + ']';
 console.log('Writing to index.js')
-const indexAfterCitiesMod = stringReplaceAt(indexJSContents, startOfCitiesArea, endOfCitiesArea, JSON.stringify(existingListOfCities) + ';');
+const indexAfterCitiesMod = stringReplaceAt(indexJSContents, startOfCitiesArea, endOfCitiesArea, existingListOfCities + ';');
 fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, indexAfterCitiesMod, { 'encoding': 'utf-8' });
 
 console.log('Extracting existing map config')
@@ -120,15 +106,25 @@ const existingMapConfig = gameMainJSContents.substring(startOfMapConfig, endOfMa
 console.log('Modifying map config');
 const newMapConfig = existingMapConfig
   .replaceAll(/\[(tilesUrl|foundationTilesUrl)\]/g, JSON.stringify([
-    'https://api.maptiler.com/tiles/v4/{z}/{x}/{y}.pbf?key=' + config.maptiler_key,
+    'http://127.0.0.1:8080/merged/{z}/{x}/{y}.mvt',
+    'map://${cityCode}/tiles/{z}/{x}/{y}.mvt'
   ]))
-  .replaceAll('maxzoom: 16', 'maxzoom: 15');
+  .replaceAll('maxzoom: 16', `maxzoom: ${config['tile-zoom-level']-1}`);
 const gameMainAfterMapConfigMod = stringReplaceAt(gameMainJSContents, startOfMapConfig, endOfMapConfig, newMapConfig);
 
 console.log('Modifying map layers')
 // doing parks coloring
 const startOfParksMapConfig = gameMainAfterMapConfigMod.search(/{\n\s*id:\s*"parks-large",/);
 const endOfParksMapConfig = gameMainAfterMapConfigMod.search(/{\n\s*id:\s*"airports/, startOfParksMapConfig) - 1;
+const startOfWaterConfig = gameMainAfterMapConfigMod.search(/{\n\s*id:\s*"water",/);
+const endOfWaterConfig = gameMainAfterMapConfigMod.search(/{\n\s*id:\s*"parks-large"/, startOfWaterConfig) - 1;
+const startOfBuildingsConfig = gameMainAfterMapConfigMod.search(/{\n\s*id:\s*"buildings-3d",/);
+const endOfBuildingsConfig = startOfWaterConfig - 1;
+let buildingsMapConfig = gameMainAfterMapConfigMod.substring(startOfBuildingsConfig, endOfBuildingsConfig);
+buildingsMapConfig = buildingsMapConfig.replace('] : 0.2', '] : 1.5');
+if (startOfWaterConfig == -1 || endOfWaterConfig == -1) triggerError('code-not-found', 'The map styling for water could not be located.');
+let waterMapConfig = gameMainAfterMapConfigMod.substring(startOfWaterConfig, endOfWaterConfig);
+waterMapConfig = waterMapConfig.replace('"fill-extrusion-height": 0', '"fill-extrusion-height": 0.1');
 if (startOfParksMapConfig == -1 || endOfParksMapConfig == -1) triggerError('code-not-found', 'The map styling for parks could not be located.');
 let parksMapConfig = gameMainAfterMapConfigMod.substring(startOfParksMapConfig, endOfParksMapConfig);
 const originalFilters = parksMapConfig.match(/\["[<>=]{1,2}",\s+\["get",\s+"area"\],\s+[0-9e]+\]/g);
@@ -138,8 +134,10 @@ originalFilters.forEach((filter) => {
 });
 parksMapConfig = parksMapConfig.replaceAll(`"source-layer": "parks"`, `"source-layer": "landuse"`);
 var gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterMapConfigMod, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
-gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
-gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports"', '"source-layer": "aviation"');
+gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterParksMapConfigMod, startOfWaterConfig, endOfWaterConfig, waterMapConfig);
+gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterParksMapConfigMod, startOfBuildingsConfig, endOfBuildingsConfig, buildingsMapConfig);
+//gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
+gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],');
 
 console.log('Writing to GameMain.js')
 fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, gameMainAfterParksMapConfigMod, { 'encoding': 'utf-8' });
