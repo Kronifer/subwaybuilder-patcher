@@ -1,6 +1,6 @@
 # SubwayBuilder Patcher
 
-Self explanatory title. Patches other cities into subway builder. You need to own the game already and have it on your machine. I might extend this to add features and such to subwaybuilder. I don't know. Its 9pm on a thursday as I type this. I don't even know what I'm having for lunch tomorrow; I definitely don't know where this project will be within a week. **NOTE: THIS VERSION EXPECTS YOU TO SELFHOST A MERGED PMTILES FILE USING THE PMTILES CLI**
+Self explanatory title. Patches other cities into subway builder. You need to own the game already and have it on your machine. I might extend this to add features and such to subwaybuilder. I don't know. Its 9pm on a thursday as I type this. I don't even know what I'm having for lunch tomorrow; I definitely don't know where this project will be within a week. **NOTE: THIS VERSION EXPECTS YOU TO SELFHOST YOUR OWN MAP TILES USING THE PMTILES CLI**
 
 ## Support
 This tool will patch an appimage (linux) or create a modified version of the install directory. I would add support for macos, but the best I can do is generate a folder that macos users *should* be able to bring into their install folder. I have no clue though. The vodka lemonades are speaking to me.
@@ -17,6 +17,7 @@ Git, wow. You know the drill. Or maybe you don't. I am assuming you have some ex
 
 Additionally, the following tools are required to be installed:
 - gzip
+- [PMTiles](https://github.com/protomaps/go-pmtiles/releases/latest) (put executable in the map_tiles directory)
 - appimagetool (LINUX ONLY)
   - Go [here](https://github.com/AppImage/appimagetool/releases/tag/continuous)
   - Download the latest version for your chip type (most likely `appimagetool-x86_64.AppImage`)
@@ -33,6 +34,7 @@ Well, the program needs to know what cities you want to download and patch in. G
 3. Select the text next to 'Box' at the bottom.  
   a. Should look like this: `-79.405575,43.641169,-79.363003,43.663029`
 4. Paste that into the `bbox` field for this `place` in your `config.js`.
+5. Go to [maps.protomaps.com/builds](https://maps.protomaps.com/builds/) and paste the latest download link into the `protomaps-bucket` field.
 
 Additionally, you need to insert the location of your SubwayBuilder install (if on linux, the appimage location, if on windows, the install directory) and you need to specify what operating system you're using (either windows or linux).
 
@@ -41,18 +43,19 @@ There are valid sample configurations for windows and linux at `config_windows.j
 This is a valid `config.js`:
 ```js
 const config = {
-  "subwaybuilderLocation": "./Downloads/Subway-Builder/Subway-Builder.AppImage",
-  "maptiler_key": "YOUR_API_KEY", // required to make maps function!
+  "subwaybuilderLocation": "C:\\Users\\username\\AppData\\Local\\Programs\\Subway\ Builder\\", // appimage location image on linux or install directory on windows (something like C:\\Users\\[username]\\AppData\\Local\\Programs\\Subway\ Builder)
+  "tile-zoom-level": 16, // zoom level for map tiles to download
+  "protomaps-bucket": "https://build.protomaps.com/20251104.pmtiles", // Grab the latest download link from https://maps.protomaps.com/builds/
   "places": [
     {
-      "code": "YYZ", // not sure if required, but I would use all caps for the code
-      "name": "Toronto",
-      "description": "sideways chicago. da windy city babayyyyy",
-      "bbox": [-79.405575, 43.641169, -79.363003, 43.663029],
-      "population": 2700000, // this doesn't really matter, it just pops up on the map selection screen
+      "code": "YWG",
+      "name": "Winnipeg",
+      "description": "chicago if it was tiny",
+      "bbox": [-97.334061,49.766631,-96.958466,49.977059], // -79.454498,43.624458,-79.310818,43.680412
+      "population": 850000,
     }
   ],
-  "platform": "linux"
+  "platform": "windows" // either 'linux' or 'windows'
 };
 
 export default config;
@@ -65,7 +68,6 @@ There are many scripts. Great scripts. Wonderful scripts. You don't need to run 
 > `node ./scripts/download_tiles.js`
 
 Downloads map tiles for places specified in `config.js` to be served by `pmtiles`. To play the game with map tiles, run `scripts/serve.ps1` or `scripts/serve.sh` from a terminal or file manager.
-**NOTE: You will need to merge all the downloaded pieces into a single file called `merged.pmtiles` yourself. See the Example Github workflow for a way to do this without too much work.**
 
 
 ### Download Data
@@ -84,6 +86,18 @@ Processes the previously downloaded data into folders that SubwayBuilder can und
 Patches the places into an appimage (linux) or the install folder (windows). In both cases, the patched version of the game will appear here under a folder named `subwaybuilder-patched-sbp/`. Your original installation will not be overwritten.
 
 **NOTE**: If you already have a built map, you can skip the first two scripts and place your built map within `processed_data/`. You ***will still need to*** create a valid configuration for this map within `config.js`, but can avoid having to run the downloading and processing scripts. After doing so, you can run the Patch Game script as normal.
+
+### Serve Map Tiles
+**For Windows**: 
+```
+cd scripts
+.\serve.ps1
+```
+**For Linux/MacOS(Mac untested)**
+```
+cd scripts
+./serve
+```
 
 ---
 

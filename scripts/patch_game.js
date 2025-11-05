@@ -105,9 +105,7 @@ if (startOfMapConfig == -1 || endOfMapConfig == -1) triggerError('code-not-found
 const existingMapConfig = gameMainJSContents.substring(startOfMapConfig, endOfMapConfig);
 console.log('Modifying map config');
 const newMapConfig = existingMapConfig
-  .replaceAll(/\[(tilesUrl|foundationTilesUrl)\]/g, JSON.stringify([
-    'http://127.0.0.1:8080/merged/{z}/{x}/{y}.mvt'
-  ]))
+  .replaceAll(/\[(tilesUrl|foundationTilesUrl)\]/g, "[\`http://127.0.0.1:8080/${cityCode}/{z}/{x}/{y}.mvt\`]")
   .replaceAll('maxzoom: 16', `maxzoom: ${config['tile-zoom-level']-1}`);
 const gameMainAfterMapConfigMod = stringReplaceAt(gameMainJSContents, startOfMapConfig, endOfMapConfig, newMapConfig);
 
