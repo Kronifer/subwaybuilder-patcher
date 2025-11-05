@@ -1,6 +1,7 @@
 const config = {
   "subwaybuilderLocation": "/Applications/Subway Builder.app", // appimage location image on linux, .app location on mac or install directory on windows (something like C:\Users\[username]\AppData\Local\Programs\Subway Builder)
-  "maptiler_key": "YOUR_KEY",
+  "tile-zoom-level": 16, // zoom level for map tiles to download
+  "protomaps-bucket": "https://build.protomaps.com/20251023.pmtiles", // Protomaps bucket URL for downloading tiles
   "places": [
     {
       "code": "YYZ",
