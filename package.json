@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "all": "node ./scripts/download_data.js && node ./scripts/process_data.js && node ./scripts/patch_game.js"
+    "all": "node ./scripts/download_data.js && node ./scripts/download_tiles.js && node ./scripts/process_data.js && node ./scripts/patch_game.js"
   },
   "keywords": [],
   "author": "",

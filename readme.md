@@ -11,7 +11,7 @@ I'm just getting all of the data from OSM. Job and population data are incredibl
 ## Downloading
 Git, wow. You know the drill. Or maybe you don't. I am assuming you have some experience with git and nodejs to use this tool. I'm sorry if you dont (I'll try to make an in depth video tutorial at some point on how to install node and run this if you aren't *super* technical).
 
-1. `git clone https://github.com/piemadd/subwaybuilder-patcher`
+1. `git clone https://github.com/kronifer/subwaybuilder-patcher`
 2. cd `subwaybuilder-patcher`
 3. `npm install`
 
@@ -63,6 +63,11 @@ export default config;
 
 ## Running Scripts
 There are many scripts. Great scripts. Wonderful scripts. You don't need to run them all, but you certainly can.
+
+### AHHHHHH I DONT KNOW WHAT IM DOING JUST GIVE ME EVERYTHING PLEASE
+> `npm run all`
+
+Will run every script (downloading data, tiles, parsing them, and patching the game.) Make sure you are running it in the patcher directory, not the scripts!
 
 ### Download Tiles (REQUIRES PMTILES CLI EXECUTABLE TO BE IN "map_tiles" DIRECTORY)
 > `node ./scripts/download_tiles.js`
