@@ -105,7 +105,8 @@ if (startOfMapConfig == -1 || endOfMapConfig == -1) triggerError('code-not-found
 const existingMapConfig = gameMainJSContents.substring(startOfMapConfig, endOfMapConfig);
 console.log('Modifying map config');
 const newMapConfig = existingMapConfig
-  .replaceAll(/\[(tilesUrl|foundationTilesUrl)\]/g, "[\`http://127.0.0.1:8080/${cityCode}/{z}/{x}/{y}.mvt\`]")
+  .replaceAll(/\[tilesUrl\]/g, "[['ATL', 'AUS', 'BAL', 'BOS', 'CHI', 'CIN', 'CLE', 'CLT', 'DAL', 'DC', 'DEN', 'DET', 'HNL', 'HOU', 'IND', 'MIA', 'MSP', 'NYC', 'PDX', 'PHL', 'PIT', 'SAN', 'SEA', 'SF', 'SLC', 'STL'].indexOf(cityCode) == -1 ? \`http://127.0.0.1:8080/${cityCode}/{z}/{x}/{y}.mvt\` : tilesUrl]")
+  .replaceAll(/\[foundationTilesUrl\]/g, "[['ATL', 'AUS', 'BAL', 'BOS', 'CHI', 'CIN', 'CLE', 'CLT', 'DAL', 'DC', 'DEN', 'DET', 'HNL', 'HOU', 'IND', 'MIA', 'MSP', 'NYC', 'PDX', 'PHL', 'PIT', 'SAN', 'SEA', 'SF', 'SLC', 'STL'].indexOf(cityCode) == -1 ? \`http://127.0.0.1:8080/${cityCode}/{z}/{x}/{y}.mvt\` : foundationTilesUrl]")
   .replaceAll('maxzoom: 16', `maxzoom: ${config['tile-zoom-level']-1}`);
 const gameMainAfterMapConfigMod = stringReplaceAt(gameMainJSContents, startOfMapConfig, endOfMapConfig, newMapConfig);
 
@@ -129,12 +130,13 @@ originalFilters.forEach((filter) => {
   if (''.includes('<')) return; // we're only doing the big park, dont @ me (the data for park sizes isnt in my tiles)
   parksMapConfig = parksMapConfig.replace(filter, `["==", ["get", "kind"], "park"]`);
 });
-parksMapConfig = parksMapConfig.replaceAll(`"source-layer": "parks"`, `"source-layer": "landuse"`);
+parksMapConfig = parksMapConfig.replace(`"source-layer": "parks"`, `"source-layer": "landuse"`).replaceAll(/"source-layer": "parks",\n *filter:.*/g, '"source-layer": "parks",');
 var gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterMapConfigMod, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
 gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterParksMapConfigMod, startOfWaterConfig, endOfWaterConfig, waterMapConfig);
 gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterParksMapConfigMod, startOfBuildingsConfig, endOfBuildingsConfig, buildingsMapConfig);
+
 //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
-gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],');
+gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],').replaceAll("showOceanFoundations: layersToShow.oceanFoundations", "showOceanFoundations: !layersToShow.oceanFoundations");
 
 console.log('Writing to GameMain.js')
 fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, gameMainAfterParksMapConfigMod, { 'encoding': 'utf-8' });
