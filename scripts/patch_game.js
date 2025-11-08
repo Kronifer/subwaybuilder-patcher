@@ -137,6 +137,41 @@ gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterParksMapConfigMod,
 
 //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
 gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],').replaceAll("showOceanFoundations: layersToShow.oceanFoundations", "showOceanFoundations: !layersToShow.oceanFoundations");
+const startOfAirportsConfig = gameMainAfterParksMapConfigMod.search(/{\n\s*id:\s*"airports",/);
+const endOfAirportsConfig = gameMainAfterParksMapConfigMod.search(/}\n\s*\);\n\s*layers\.push\({\n\s*id: "general-tiles",/);
+const newAirportsConfig = `
+      {
+        id: "airports",
+        type: "fill-extrusion",
+        source: "general-tiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "kind"], "aerodrome"],
+        paint: {
+          "fill-extrusion-color": mapColors.airports,
+          "fill-extrusion-height": 0,
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": 1
+        },
+        layout: {
+          visibility: showFoundations ? "none" : "visible"
+        }
+      },
+      {
+        id: "airports-vanilla",
+        type: "fill-extrusion",
+        source: "general-tiles",
+        "source-layer": "airports",
+        paint: {
+          "fill-extrusion-color": mapColors.airports,
+          "fill-extrusion-height": 0,
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": 1
+        },
+        layout: {
+          visibility: showFoundations ? "none" : "visible"
+        }
+      }`;
+gameMainAfterParksMapConfigMod = stringReplaceAt(gameMainAfterParksMapConfigMod, startOfAirportsConfig, endOfAirportsConfig, newAirportsConfig);
 
 console.log('Writing to GameMain.js')
 fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, gameMainAfterParksMapConfigMod, { 'encoding': 'utf-8' });
