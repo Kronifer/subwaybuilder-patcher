@@ -466,6 +466,7 @@ const processAllData = async (place) => {
   console.log('Writing finished data for', place.code)
   fs.writeFileSync(`./processed_data/${place.code}/buildings_index.json`, JSON.stringify(processedBuildings), { encoding: 'utf8' });
   fs.cpSync(`./raw_data/${place.code}/roads.geojson`, `./processed_data/${place.code}/roads.geojson`);
+  fs.cpSync(`./raw_data/${place.code}/runways_taxiways.geojson`, `./processed_data/${place.code}/runways_taxiways.geojson`);
   fs.writeFileSync(`./processed_data/${place.code}/demand_data.json`, JSON.stringify(processedConnections), { encoding: 'utf8' });
 };
 

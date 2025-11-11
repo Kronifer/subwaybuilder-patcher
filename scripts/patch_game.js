@@ -44,8 +44,8 @@ if (config.platform == 'linux') {
 
 console.log('Extracting asar contents')
 execSync(`npx @electron/asar extract ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar ${import.meta.dirname}/../patching_working_directory/extracted-asar`);
-console.log('Locating main.js');
-const shouldBeMainJS = import.meta.dirname + '/../patching_working_directory/extracted-asar/dist/main/main.js';
+//console.log('Locating main.js');
+//const shouldBeMainJS = import.meta.dirname + '/../patching_working_directory/extracted-asar/dist/main/main.js';
 console.log('Locating index.js')
 const filesInPublicDirectory = fs.readdirSync(import.meta.dirname + '/../patching_working_directory/extracted-asar/dist/renderer/public');
 const shouldBeIndexJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('index-') && fileName.endsWith('.js'));
@@ -178,7 +178,7 @@ fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted
 
 // i can do this programmatically but it was seemingly async, which I can't deal with rn
 console.log('Repacking asar contents');
-execSync(`npx @electron/asar pack ${import.meta.dirname}/../patching_working_directory/extracted-asar ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar`)
+execSync(`npx @electron/asar pack ${import.meta.dirname}/../patching_working_directory/extracted-asar ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar --unpack-dir=node_modules/@esbuild --unpack-dir=node_modules/@img --unpack-dir=node_modules/{sharp,@rollup,@esbuild,@img,register-scheme}`);
 
 console.log('Copying over maps and compressing (if needed)');
 config.places.forEach((place) => {
@@ -194,17 +194,20 @@ config.places.forEach((place) => {
   let hasBuildings = false;
   let hasDemand = false;
   let hasRoads = false;
+  let hasRunwaysTaxiways = false;
 
   // checking to make sure we have everything we need
   listOfPlaceFiles.forEach((file) => {
     if (file.startsWith('buildings')) hasBuildings = true;
     if (file.startsWith('demand')) hasDemand = true;
     if (file.startsWith('roads')) hasRoads = true;
+    if (file.startsWith('runways')) hasRunwaysTaxiways = true;
   });
 
   if (!hasBuildings) triggerError('required-map-file-not-found', 'Missing file: buildings_index.json OR buildings_index.json.gz (only one is required)');
   if (!hasDemand) triggerError('required-map-file-not-found', 'Missing file: demand_data.json OR buildings_index.json.gz (only one is required)');
   if (!hasRoads) triggerError('required-map-file-not-found', 'Missing file: roads.geojson OR buildings_index.geojson.gz (only one is required)');
+  if(!hasRunwaysTaxiways) triggerError('required-map-file-not-found', 'Missing file: runways_taxiways.geojson OR runways_taxiways.geojson.gz (only one is required)');
 
   // actually zipping
   listOfPlaceFiles.forEach((file) => {

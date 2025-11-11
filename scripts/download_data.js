@@ -2,11 +2,12 @@ import fs from 'fs';
 import { createParseStream, createStringifyStream } from 'big-json';
 import { Readable } from "stream";
 import config from '../config.js';
+import * as turf from '@turf/turf';
 
 const convertBbox = (bbox) => [bbox[1], bbox[0], bbox[3], bbox[2]];
 
 const runQuery = async (query) => {
-  const res = await fetch("https://overpass-api.de/api/interpreter", {
+  const res = await fetch("https://maps.mail.ru/osm/tools/overpass/api/interpreter", {
     "credentials": "omit",
     "headers": {
       "User-Agent": "SubwayBuilder-Patcher (https://github.com/piemadd/subwaybuilder-patcher)",
@@ -57,6 +58,51 @@ const getStreetName = (tags, preferLocale = 'en') => {
     return tags.ref.trim();
   }
   return '';
+};
+
+const fetchRunwayTaxiwayData = async (bbox) => {
+  const runwayTaxiwayQuery = `
+[out:json][timeout:180];
+(
+  way["aeroway"="runway"](${bbox.join(',')});
+  way["aeroway"="taxiway"](${bbox.join(',')});
+  way["aeroway"="apron"](${bbox.join(',')});
+);
+out geom;`;
+  const data = await runQuery(runwayTaxiwayQuery);
+  return {
+    "type": "FeatureCollection", "features": data.elements.map((element) => {
+      if(element.tags.aeroway !== "runway" && element.tags.aeroway !== "taxiway") {
+      return {
+        "type": "Feature",
+        "properties": {
+          roadType: "runway",
+          aeroway: element.tags.aeroway,
+          osm_way_id: new String(element.id),
+          area: turf.area(turf.polygon([element.geometry.map((coord) => [coord.lon, coord.lat])])),
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [element.geometry.map((coord) => [coord.lon, coord.lat])],
+        }
+      }
+   } else {
+      return {
+        "type": "Feature",
+        "properties": {
+          roadType: "runway",
+          z_order: 0,
+          osm_way_id: new String(element.id),
+          area: turf.area(turf.lineString(element.geometry.map((coord) => [coord.lon, coord.lat]))),
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [turf.buffer(turf.lineString(element.geometry.map((coord) => [coord.lon, coord.lat])), element.tags.aeroway == "runway" ? 30 : 10, { units: 'meters' }).geometry.coordinates[0]],
+        }
+      }
+    }
+    })
+  }
 };
 
 const fetchRoadData = async (bbox) => {
@@ -138,7 +184,6 @@ out geom;
 
 const fetchAllData = async (place) => {
   if (!fs.existsSync(`./raw_data/${place.code}`)) fs.mkdirSync(`./raw_data/${place.code}`);
-
   console.log(`Fetching ${place.name} (${place.code}) - May take a while`);
   const convertedBoundingBox = convertBbox(place.bbox);
   console.time(`${place.name} (${place.code}) Road Data Fetch`);
@@ -150,6 +195,9 @@ const fetchAllData = async (place) => {
   console.time(`${place.name} (${place.code}) Places Data Fetch`);
   const placesData = await fetchPlacesData(convertedBoundingBox);
   console.timeEnd(`${place.name} (${place.code}) Places Data Fetch`);
+  console.time(`${place.name} (${place.code}) Runway Data Fetch`);
+  const runwayTaxiwayData = await fetchRunwayTaxiwayData(convertedBoundingBox);
+  console.timeEnd(`${place.name} (${place.code}) Runway Data Fetch`);
 
   try {
     console.time(`Writing roads for ${place.name} (${place.code})`);
@@ -161,18 +209,24 @@ const fetchAllData = async (place) => {
     console.time(`Writing places for ${place.name} (${place.code})`);
     fs.writeFileSync(`./raw_data/${place.code}/places.json`, JSON.stringify(placesData), { encoding: 'utf8' });
     console.timeEnd(`Writing places for ${place.name} (${place.code})`);
+    console.time(`Writing runways/taxiways for ${place.name} (${place.code})`);
+    fs.writeFileSync(`./raw_data/${place.code}/runways_taxiways.geojson`, JSON.stringify(runwayTaxiwayData), { encoding: 'utf8' });
+    console.timeEnd(`Writing runways/taxiways for ${place.name} (${place.code})`);
   } catch (e) { // falling back to slower but more reliable big-json if files are too big
     console.time(`Writing roads for ${place.name} (${place.code})`);
     console.time(`Writing buildings for ${place.name} (${place.code})`);
     console.time(`Writing places for ${place.name} (${place.code})`);
+    console.time(`Writing runways/taxiways for ${place.name} (${place.code})`);
 
     const roadsWriteStream = fs.createWriteStream(`./raw_data/${place.code}/roads.geojson`, { encoding: 'utf8' });
     const buildingsWriteStream = fs.createWriteStream(`./raw_data/${place.code}/buildings.json`, { encoding: 'utf8' });
     const placesWriteStream = fs.createWriteStream(`./raw_data/${place.code}/places.json`, { encoding: 'utf8' });
+    const runwaysTaxiwaysWriteStream = fs.createWriteStream(`./raw_data/${place.code}/runways_taxiways.geojson`, { encoding: 'utf8' });
 
     const roadStringifyStream = createStringifyStream({ body: roadData });
     const buildingsStringifyStream = createStringifyStream({ body: buildingData });
     const placesStringifyStream = createStringifyStream({ body: placesData });
+    const runwaysTaxiwaysStringifyStream = createStringifyStream({ body: runwayTaxiwayData });
 
     roadStringifyStream.on('end', () => {
       console.timeEnd(`Writing roads for ${place.name} (${place.code})`);
@@ -186,10 +240,15 @@ const fetchAllData = async (place) => {
       console.timeEnd(`Writing places for ${place.name} (${place.code})`);
       placesWriteStream.close();
     });
+    runwaysTaxiwaysStringifyStream.on('end', () => {
+      console.timeEnd(`Writing runways/taxiways for ${place.name} (${place.code})`);
+      runwaysTaxiwaysWriteStream.close();
+    });
 
     roadStringifyStream.pipe(roadsWriteStream);
     buildingsStringifyStream.pipe(buildingsWriteStream);
     placesStringifyStream.pipe(placesWriteStream);
+    runwaysTaxiwaysStringifyStream.pipe(runwaysTaxiwaysWriteStream);
 
     console.log(`Done downloading ${place.name} (${place.code}) - DO NOT EXIT THE PROGRAM AS FILES MAY STILL BE GETTING WRITTEN`);
   }
