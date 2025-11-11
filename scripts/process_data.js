@@ -99,6 +99,7 @@ const squareFeetPerJob = {
 };
 
 let terminalTicker = 0;
+let uniTicker = 0;
 
 const processPlaceConnections = (place, rawBuildings, rawPlaces) => {
   let neighborhoods = {};
@@ -107,7 +108,7 @@ const processPlaceConnections = (place, rawBuildings, rawPlaces) => {
 
   // finding areas of neighborhoods
   rawPlaces.forEach((place) => {
-    if (place.tags.place && (place.tags.place == 'quarter' || place.tags.place == 'neighbourhood') || (place.tags.aeroway && place.tags.aeroway == 'terminal')) {
+    if (place.tags.place && (place.tags.place == 'quarter' || place.tags.place == 'neighbourhood') || (place.tags.aeroway && place.tags.aeroway == 'terminal') || (place.tags.amenity && place.tags.amenity == 'university')) {
       neighborhoods[place.id] = place;
       if (place.type == 'node') {
         centersOfNeighborhoods[place.id] = [place.lon, place.lat];
@@ -216,6 +217,11 @@ const processPlaceConnections = (place, rawBuildings, rawPlaces) => {
       id = "AIR_Terminal_" + terminalTicker;
       terminalTicker++;
       console.log("New terminal added:", id);
+    }
+    else if(neighborhoods[id] && neighborhoods[id].tags && neighborhoods[id].tags.amenity && neighborhoods[id].tags.amenity == 'university'){
+      id = "UNI_" + uniTicker;
+      uniTicker++;
+      console.log("New university added:", id);
     }
 
 
