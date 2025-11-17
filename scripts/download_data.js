@@ -110,10 +110,16 @@ const fetchRoadData = async (bbox) => {
 [out:json][timeout:180];
 (
   way["highway"="motorway"](${bbox.join(',')});
+  way["highway"="motorway_link"](${bbox.join(',')});
   way["highway"="trunk"](${bbox.join(',')});
+  way["highway"="trunk_link"](${bbox.join(',')});
   way["highway"="primary"](${bbox.join(',')});
+  way["highway"="primary_link"](${bbox.join(',')});
   way["highway"="secondary"](${bbox.join(',')});
+  way["highway"="secondary_link"](${bbox.join(',')});
   way["highway"="tertiary"](${bbox.join(',')});
+  way["highway"="tertiary_link"](${bbox.join(',')});
+  way["highway"="unclassified"](${bbox.join(',')});
   way["highway"="residential"](${bbox.join(',')});
 );
 out geom;`
@@ -122,11 +128,18 @@ out geom;`
 
   const roadTypes = {
     motorway: 'highway',
+    motorway_link: 'highway',
     trunk: 'major',
+    trunk_link: 'major',
     primary: 'major',
+    primary_link: 'major',
     secondary: 'minor',
+    secondary_link: 'minor',
     tertiary: 'minor',
+    tertiary_link: 'minor',
+    unclassified: 'minor',
     residential: 'minor',
+
   };
 
   return {
