@@ -11,9 +11,11 @@ const optimizeBuilding = (unOptimizedBuilding) => {
   }
 };
 
+const CS = 0.0009; // This is what the cell size always is in the base game
+
 const optimizeIndex = (unOptimizedIndex) => {
   return {
-    cs: unOptimizedIndex.cellHeightCoords,
+    cs: CS,
     bbox: [unOptimizedIndex.minLon, unOptimizedIndex.minLat, unOptimizedIndex.maxLon, unOptimizedIndex.maxLat],
     grid: [unOptimizedIndex.cols, unOptimizedIndex.rows],
     cells: Object.keys(unOptimizedIndex.cells).map((key) => [...key.split(',').map((n) => Number(n)), ...unOptimizedIndex.cells[key]]),
@@ -341,74 +343,64 @@ const processBuildings = (place, rawBuildings) => {
     }
   });
 
-  // creating the grid of cells
-  // creating two lines that we will use to metaphorically split up the bbox
-  const verticalLine = turf.lineString([[minLon, minLat], [minLon, maxLat]]);
-  const horizontalLine = turf.lineString([[minLon, minLat], [maxLon, minLat]]);
+// === Cell generation logic made more similar to the game ===
+const cs  = 0.0009; // latitude (deg)
+const latMid = (minLat + maxLat) / 2;
+const distortionFactor = 1 / Math.cos(latMid * Math.PI / 180);
+const cs_x = cs * distortionFactor;
 
-  const verticalLength = turf.length(verticalLine, { units: 'meters' });
-  const horizontalLength = turf.length(horizontalLine, { units: 'meters' });
+// Compute grid dimensions
+const grid_x = Math.ceil((maxLon - minLon) / cs_x);
+const grid_y = Math.ceil((maxLat - minLat) / cs);
 
-  let columnCoords = []; // x, made by going along horizontal line
-  let rowCoords = []; // y, made by going along vertical line
+// Build boundary coordinate arrays
+let columnCoords = [];
+for (let i = 0; i <= grid_x; i++) {
+  columnCoords.push(minLon + i * cs_x);
+}
 
-  let cellSize = null;
+let rowCoords = [];
+for (let j = 0; j <= grid_y; j++) {
+  rowCoords.push(minLat + j * cs);
+}
 
-  // generating the column coords
-  for (let x = 0; x <= horizontalLength; x += 100) {
-    const minX = turf.along(horizontalLine, x, { units: 'meters' }).geometry.coordinates[0];
-    columnCoords.push(minX); //minX will be inclusive
-  };
-
-  // generating the row coords
-  for (let y = 0; y <= verticalLength; y += 100) {
-    const minY = turf.along(verticalLine, y, { units: 'meters' }).geometry.coordinates[1];
-
-    if (y == 100) cellSize = Number((minY - rowCoords[0]).toFixed(4)); // idk why we need this, but its in the data format!
-
-    rowCoords.push(minY); //minY will be inclusive
-  };
-
-  // figuring out what buildings are in what cells
-
-  // longitude/x
-  for (let x = 0; x < columnCoords.length; x++) {
-    const thisMinLon = columnCoords[x];
-    const nextMinLon = x == columnCoords.length - 1 ? 999 : columnCoords[x + 1]; // if in the last column, "next" min longitude value is just big
-
-    const buildingsThatFit = Object.values(processedBuildings).filter((building) => thisMinLon <= building.center[0] && nextMinLon > building.center[0]);
-    buildingsThatFit.forEach((building) => {
-      processedBuildings[building.id].xCellCoord = x;
-    })
-  };
-
-  // latitude/y
-  for (let y = 0; y < rowCoords.length; y++) {
-    const thisMinLon = rowCoords[y];
-    const nextMinLon = y == rowCoords.length - 1 ? rowCoords[y] + cellSize : rowCoords[y + 1]; // if in the last row, "next" min latitude value is just big
-
-    if (y == rowCoords.length - 1) { // adjusting the maxLat to fix the grid
-      maxLat = rowCoords[y] + cellSize;
+// Assign buildings → X cell
+Object.values(processedBuildings).forEach(b => {
+  for (let x = 0; x < columnCoords.length - 1; x++) {
+    const xMin = columnCoords[x];
+    const xMax = columnCoords[x + 1];
+    if (b.center[0] >= xMin && b.center[0] < xMax) {
+      b.xCellCoord = x;
+      break;
     }
+  }
+});
 
-    const buildingsThatFit = Object.values(processedBuildings).filter((building) => thisMinLon <= building.center[1] && nextMinLon > building.center[1]);
-    buildingsThatFit.forEach((building) => {
-      processedBuildings[building.id].yCellCoord = y;
-    })
-  };
+// Assign buildings → Y cell
+Object.values(processedBuildings).forEach(b => {
+  for (let y = 0; y < rowCoords.length - 1; y++) {
+    const yMin = rowCoords[y];
+    const yMax = rowCoords[y + 1];
+    if (b.center[1] >= yMin && b.center[1] < yMax) {
+      b.yCellCoord = y;
+      break;
+    }
+  }
+});
 
-  // building the dictionary of cells, finally
-  let cellsDict = {};
-  Object.values(processedBuildings).forEach((building) => {
-    const buildingCoord = `${building.xCellCoord},${building.yCellCoord}`;
-    if (!cellsDict[buildingCoord]) cellsDict[buildingCoord] = [];
-    cellsDict[buildingCoord].push(building.id);
-  });
+// Build cell dictionary
+let cellsDict = {};
+Object.values(processedBuildings).forEach(b => {
+  const key = `${b.xCellCoord},${b.yCellCoord}`;
+  if (!cellsDict[key]) cellsDict[key] = [];
+  cellsDict[key].push(b.id);
+});
+
 
   let maxDepth = 1;
 
   const optimizedIndex = optimizeIndex({
-    cellHeightCoords: cellSize,
+    cellHeightCoords: cs,
     minLon,
     minLat,
     maxLon,
