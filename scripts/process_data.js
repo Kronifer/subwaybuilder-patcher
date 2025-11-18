@@ -332,7 +332,7 @@ const processBuildings = (place, rawBuildings) => {
     processedBuildings[i] = {
       bbox: {
         minLon: minBuildingLon,
-        maxLat: minBuildingLat,
+        minLat: minBuildingLat,
         maxLon: maxBuildingLon,
         maxLat: maxBuildingLat,
       },
@@ -343,7 +343,7 @@ const processBuildings = (place, rawBuildings) => {
     }
   });
 
-// === Cell generation logic made more similar to the game ===
+// === Cell size taken from R analysis ===
 const cs  = 0.0009; // latitude (deg)
 const latMid = (minLat + maxLat) / 2;
 const distortionFactor = 1 / Math.cos(latMid * Math.PI / 180);
