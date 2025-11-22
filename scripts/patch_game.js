@@ -178,7 +178,7 @@ fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted
 
 // i can do this programmatically but it was seemingly async, which I can't deal with rn
 console.log('Repacking asar contents');
-execSync(`npx @electron/asar pack ${import.meta.dirname}/../patching_working_directory/extracted-asar ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar --unpack-dir=node_modules/@esbuild --unpack-dir=node_modules/@img --unpack-dir=node_modules/{sharp,@rollup,@esbuild,@img,register-scheme}`);
+execSync(`npx @electron/asar pack ${import.meta.dirname}/../patching_working_directory/extracted-asar ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar --unpack-dir=node_modules/{sharp,@rollup,@esbuild,@img,register-scheme}`);
 
 console.log('Copying over maps and compressing (if needed)');
 config.places.forEach((place) => {
