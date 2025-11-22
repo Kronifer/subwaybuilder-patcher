@@ -248,6 +248,7 @@ if (config.platform == 'linux') {
   const patchedAsarPath = `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar`;
   const targetAsarPath = `${patchedAppPath}/Contents/Resources/app.asar`;
   fs.cpSync(patchedAsarPath, targetAsarPath);
+  fs.cpSync(patchedAsarPath + '.unpacked', targetAsarPath + '.unpacked', { recursive: true });
 
   console.log('Copying new map data...');
   config.places.forEach((place) => {
