@@ -249,6 +249,7 @@ if (config.platform == 'linux') {
   const targetAsarPath = `${patchedAppPath}/Contents/Resources/app.asar`;
   fs.cpSync(patchedAsarPath, targetAsarPath);
   fs.cpSync(patchedAsarPath + '.unpacked', targetAsarPath + '.unpacked', { recursive: true });
+  fs.cpSync(`${patchedAppPath}/Contents/Resources/app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.17.3.dylib`, `${patchedAppPath}/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries`, { recursive: true }); // Extra copy to avoid libvips issues
 
   console.log('Copying new map data...');
   config.places.forEach((place) => {
