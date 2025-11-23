@@ -6,6 +6,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "scripts": {
+    "all": "node ./download_data.js && node ./download_tiles.js && node ./process_data.js && node ./patch_game.js"
+  },
   "dependencies": {
     "@turf/turf": "^7.2.0",
     "big-json": "^3.2.0",
