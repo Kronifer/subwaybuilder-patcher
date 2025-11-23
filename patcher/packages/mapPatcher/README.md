@@ -34,7 +34,6 @@ const config = {
       "population": 850000,
     }
   ],
-  "platform": "windows" // either 'linux' or 'windows'
 };
 
 export default config;
