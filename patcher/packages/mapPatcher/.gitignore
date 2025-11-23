@@ -1,0 +1,7 @@
+raw_data/*
+processed_data/*
+!raw_data/.gitkeep
+!processed_data/.gitkeep
+map_tiles/*
+!map_tiles/.gitkeep
+config.js

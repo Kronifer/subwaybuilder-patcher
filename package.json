@@ -1,20 +1,9 @@
 {
   "name": "subwaybuilder-patcher",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "all": "node ./scripts/download_data.js && node ./scripts/download_tiles.js && node ./scripts/process_data.js && node ./scripts/patch_game.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
+  "description": "Patches Subway Builder",
   "dependencies": {
     "@electron/asar": "^4.0.1",
-    "@turf/turf": "^7.2.0",
-    "big-json": "^3.2.0",
-    "piscina": "^5.1.3",
-    "stream-json": "^1.9.1"
+    "import-sync": "^2.2.3"
   }
 }

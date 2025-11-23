@@ -2,10 +2,7 @@ node_modules/
 appimagetool.AppImage
 test.sh
 patching_working_directory/
-raw_data/
-processed_data/*
-!processed_data/.gitkeep
-Subway_Builder*
-config.js
-map_tiles/*
-map_tiles/.git/*
+SubwayBuilderPatched/
+patcher/packages/*
+!patcher/packages/mapPatcher
+mapdata_processor/

@@ -1,2 +1,2 @@
-cd ../map_tiles
+cd ./map_tiles
 .\pmtiles.exe serve .
