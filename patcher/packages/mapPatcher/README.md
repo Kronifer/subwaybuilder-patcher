@@ -65,12 +65,10 @@ Processes the previously downloaded data into folders that SubwayBuilder can und
 ### Serve Map Tiles
 **For Windows**: 
 ```
-cd scripts
 .\serve.ps1
 ```
 **For Linux/MacOS(Mac untested)**
 ```
-cd scripts
 ./serve
 ```
 

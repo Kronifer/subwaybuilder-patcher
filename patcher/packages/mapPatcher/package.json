@@ -8,7 +8,7 @@
   "license": "ISC",
   "type": "module",
   "scripts": {
-    "all": "node ./download_data.js && node ./download_tiles.js && node ./process_data.js && node ./patch_game.js"
+    "all": "node ./download_data.js && node ./download_tiles.js && node ./process_data.js"
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
