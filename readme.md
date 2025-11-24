@@ -37,4 +37,4 @@ export default config;
 Run `node ./patcher/patch_game.js`. Make sure any installed packages under the patcher/packages directory have been configured and installed as well!
 
 ## For Developers
-For your package to be loaded, it must contain a `patcherExec.js` file, exporting a `patcherExec(fileContents)` function that accepts a dictionary of fileContents. Currently, this provides access to index and GameMain.js, as well as paths to the renderer city-maps folder and the resources folder of the game. You must return this same dictionary for your changes to be made and so other packages function correctly.
+For your package to be loaded, it must contain a `patcherExec.js` file, exporting a `patcherExec(fileContents)` function that accepts a dictionary of fileContents. Currently, this provides access to index.js, GameMain.js, interlinedRoutes.js, and popCommuteWorker.js, as well as paths to the renderer city-maps folder and the resources folder of the game. You must return this same dictionary for your changes to be made and so other packages function correctly.
