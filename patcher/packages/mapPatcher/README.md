@@ -22,7 +22,6 @@ There are valid sample configurations for windows and linux at `config_windows.j
 This is a valid `config.js`:
 ```js
 const config = {
-  "subwaybuilderLocation": "C:\\Users\\username\\AppData\\Local\\Programs\\Subway\ Builder\\", // appimage location image on linux or install directory on windows (something like C:\\Users\\[username]\\AppData\\Local\\Programs\\Subway\ Builder)
   "tile-zoom-level": 16, // zoom level for map tiles to download (16 is the max)
   "protomaps-bucket": "https://build.protomaps.com/20251104.pmtiles", // Grab the latest download link from https://maps.protomaps.com/builds/
   "places": [
@@ -78,4 +77,5 @@ cd scripts
 ---
 
 ok thats all thanks for reading this readme
+
 
