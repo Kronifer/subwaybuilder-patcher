@@ -1,5 +1,4 @@
 const config = {
-    "subwaybuilderLocation": "C:\\Users\\kronifer\\AppData\\Local\\Programs\\Subway\ Builder\\", // appimage location image on linux or install directory on windows (something like C:\\Users\\[username]\\AppData\\Local\\Programs\\Subway\ Builder)
     "tile-zoom-level": 16, // zoom level for map tiles to download
     "protomaps-bucket": "https://build.protomaps.com/20251023.pmtiles", // Protomaps bucket URL for downloading tiles
     "places": [
@@ -13,4 +12,5 @@ const config = {
     ],
   };
   
+
   export default config;
