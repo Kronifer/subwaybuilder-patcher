@@ -63,13 +63,6 @@ Takes the array of places within `config.js` and downloads OSM data from the [Ov
 
 Processes the previously downloaded data into folders that SubwayBuilder can understand. These will be located in the folder named `processed_data/`. (THIS IS ALSO SOMETHING I REALLY REALLY SHOULD REWRITE)
 
-### Patch Game
-> `node ./patch_game.js`
-
-Patches the places into an appimage (linux) or the install folder (windows). In both cases, the patched version of the game will appear here under a folder named `SubwayBuilderPatched/`. Your original installation will not be overwritten, so you can still use it for vanilla saves if you want (but vanilla saves are now fully supported after some bullshit patching)
-
-**NOTE**: If you already have a built map (from the discord or if you generated your own map with better scripts or with actual census data instead of random guesswork), you can skip the first two scripts and place your built map within `processed_data/`. You ***will still need to*** create a valid configuration for this map within `config.js`, but can avoid having to run the downloading and processing scripts. After doing so, you can run the Patch Game script as normal.
-
 ### Serve Map Tiles
 **For Windows**: 
 ```
@@ -85,3 +78,4 @@ cd scripts
 ---
 
 ok thats all thanks for reading this readme
+
