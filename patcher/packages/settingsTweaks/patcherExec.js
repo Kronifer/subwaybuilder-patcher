@@ -11,17 +11,13 @@ export function patcherExec(fileContents) {
     if (config.changeGameSpeeds) {
         console.log("Changing game simulation speeds");
         
-        fileContents.INDEX = fileContents.INDEX
+        ["INDEX", "INTERLINEDROUTES", "POPCOMMUTEWORKER"].forEach(key => {
+          fileContents[key] = fileContents[key]
             .replace(/"slow":[\s]*[0-9]+/, `"slow": ${config.gameSpeeds[0]}`)
             .replace(/"normal":[\s]*[0-9]+/, `"normal": ${config.gameSpeeds[1]}`)
             .replace(/"fast":[\s]*[0-9]+/, `"fast": ${config.gameSpeeds[2]}`)
             .replace(/"ultrafast":[\s]*[0-9]+/, `"ultrafast": ${config.gameSpeeds[3]}`);
-        
-        fileContents.INTERLINEDROUTES = fileContents.INTERLINEDROUTES
-            .replace(/"slow":[\s]*[0-9]+/, `"slow": ${config.gameSpeeds[0]}`)
-            .replace(/"normal":[\s]*[0-9]+/, `"normal": ${config.gameSpeeds[1]}`)
-            .replace(/"fast":[\s]*[0-9]+/, `"fast": ${config.gameSpeeds[2]}`)
-            .replace(/"ultrafast":[\s]*[0-9]+/, `"ultrafast": ${config.gameSpeeds[3]}`);
+        });
     }
     
     if (config.changeMinTurnRadius) {
