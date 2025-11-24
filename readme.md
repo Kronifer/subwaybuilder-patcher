@@ -1,6 +1,6 @@
 # SubwayBuilder Patcher
 
-Does what it says on the tin. Patches the game using any packages put into patcher/packages (MAP PATCHER INCLUDED BY DEFAULT).
+Does what it says on the tin. Patches the game using any packages put into patcher/packages (MAP PATCHER AND SETTINGS TWEAKS INCLUDED BY DEFAULT).
 
 ## Support
 This tool will patch an appimage (linux) or create a modified version of the install directory. I would add support for macos, but i don't have a mac so the best i can do is give you what piemadd gave you from the original version of the mod (if someone who has a mac wants to improve support submit a PR please i dont have like 1200 dollars and im pretty sure macos VMs kinda suck)
