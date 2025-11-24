@@ -38,7 +38,7 @@ export function patcherExec(fileContents) {
         }) + ", ";
     });
     const finalCitiesList = existingListOfCitiesRaw.slice(0, -2) + ']';
-    fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startOfCitiesArea, endOfCitiesArea, finalCitiesList);
+    fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startOfCitiesArea, endOfCitiesArea, finalCitiesList + ";");
     console.log('Extracting existing map config')
     const startOfMapConfig = fileContents.GAMEMAIN.indexOf('const sources = {') + 'const sources = '.length; // will give us the start of the config
     const endOfMapConfig = fileContents.GAMEMAIN.indexOf('const layers', startOfMapConfig) - 1;
