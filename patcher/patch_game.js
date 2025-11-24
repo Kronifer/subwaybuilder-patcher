@@ -39,14 +39,20 @@ const filesInPublicDirectory = fs.readdirSync(`${import.meta.dirname}/../patchin
 const shouldBeIndexJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('index-') && fileName.endsWith('.js'));
 console.log('Locating GameMain.js')
 const shouldBeGameMainJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('GameMain-') && fileName.endsWith('.js'));
-if (shouldBeIndexJS.length == 0 || shouldBeGameMainJS.length == 0) {
-    console.error("Could not locate index.js or GameMain.js in the public directory!");
+console.log('Locating interlinedRoutes.js')
+const shouldBeInterlinedRoutesJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('interlinedRoutes') && fileName.endsWith('.js'));
+console.log('Locating popCommuteWorker.js')
+const shouldBePopCommuteWorkerJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('popCommuteWorker') && fileName.endsWith('.js'));
+if (shouldBeIndexJS.length == 0 || shouldBeGameMainJS.length == 0 || shouldBeInterlinedRoutesJS.length == 0 || shouldBePopCommuteWorkerJS.length == 0) {
+    console.error("Could not locate index.js, GameMain.js, interlinedRoutes.js, and/or popCommuteWorker.js in the public directory!");
     process.exit(1);
 }
 
 let fileContents = {};
 fileContents.INDEX = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, 'utf-8');
 fileContents.GAMEMAIN = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, 'utf-8');
+fileContents.INTERLINEDROUTES = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeInterlinedRoutesJS[0]}`, 'utf-8');
+fileContents.POPCOMMUTEWORKER = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBePopCommuteWorkerJS[0]}`, 'utf-8');
 fileContents.PATHS = {};
 fileContents.PATHS.RESOURCESDIR = `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/`;
 fileContents.PATHS.RENDERERDIR = `${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/`;
@@ -66,6 +72,8 @@ Promise.all(promises).then((mods) => {
     console.log("Writing modified files back to disk");
     fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, fileContents.INDEX, 'utf-8');
     fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, fileContents.GAMEMAIN, 'utf-8');
+    fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeInterlinedRoutesJS[0]}`, fileContents.INTERLINEDROUTES, 'utf-8');
+    fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBePopCommuteWorkerJS[0]}`, fileContents.POPCOMMUTEWORKER, 'utf-8');
     console.log("Repacking app.asar");
     execSync(`npx @electron/asar pack ${import.meta.dirname}/../patching_working_directory/extracted-asar ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar --unpack-dir=node_modules/{sharp,@rollup,@esbuild,@img,register-scheme}`);
     if (config.platform === "windows") {
