@@ -28,7 +28,7 @@ else if (config.platform === "macos") {
     console.log("Platform: MacOS");
     console.log("Copying app contents");
     fs.cpSync(`${config.subwaybuilderLocation}/Contents`, `${import.meta.dirname}/../patching_working_directory/squashfs-root`, { recursive: true });
-    fs.renameSync(`${import.meta.dirname}../patching_working_directory/squashfs-root/Resources`, `${import.meta.dirname}../patching_working_directory/squashfs-root/resources`);
+    fs.renameSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/Resources`, `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources`);
 }
 
 console.log("Extracting app.asar");
