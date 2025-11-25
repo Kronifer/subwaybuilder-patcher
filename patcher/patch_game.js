@@ -1,6 +1,5 @@
 import fs from 'fs';
 import config from '../config.js';
-import config2 from './mapPatcher/config.js';
 import { execSync } from 'child_process';
 
 console.log("Subway Builder Patcher - Written by Kronifer");
