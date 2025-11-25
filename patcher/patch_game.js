@@ -4,11 +4,11 @@ import { execSync } from 'child_process';
 
 console.log("Subway Builder Patcher - Written by Kronifer");
 
-if (fs.existsSync("../patching_working_directory/squashfs-root")) {
-    fs.rmSync("../patching_working_directory/squashfs-root", { recursive: true, force: true });
+if (fs.existsSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root`)) {
+    fs.rmSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root`, { recursive: true, force: true });
 }
-if (fs.existsSync("../patching_working_directory/extracted-asar")) {
-    fs.rmSync("../patching_working_directory/extracted-asar", { recursive: true, force: true });
+if (fs.existsSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar`)) {
+    fs.rmSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar`, { recursive: true, force: true });
 }
 
 if (config.platform === "windows") {

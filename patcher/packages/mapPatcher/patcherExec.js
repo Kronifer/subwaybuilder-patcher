@@ -6,28 +6,6 @@ const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
     return string.substring(0, startIndex) + replacement + string.substring(endIndex + 1);
 };
 
-const oldStrCoords =
-`function strCoords(_0x1cd87d) {
-  return _0x1cd87d[0] + "-" + _0x1cd87d[1];
-}
-function unStrCoords(_0xb4f974) {
-  const _0x44c3ab = _0x2e04, _0x877670 = _0xb4f974["startsWith"]("-");
-  _0x877670 && (_0xb4f974 = _0xb4f974[_0x44c3ab(316)](1));
-  const [_0x2cadc8, _0x16a92b] = _0xb4f974[_0x44c3ab(309)]("-")[_0x44c3ab(301)](Number);
-  return [_0x877670 ? -_0x2cadc8 : _0x2cadc8, _0x16a92b];
-}`;
-const newStrCoords =
-`function strCoords(_0x1cd87d) {
-  return _0x1cd87d[0].toFixed(8) + "," + _0x1cd87d[1].toFixed(8); // Should be lots of detail
-}
-function unStrCoords(_0xb4f974) {
-  const _0x44c3ab = _0x2e04, _0x877670 = _0xb4f974["startsWith"](",");
-  _0x877670 && (_0xb4f974 = _0xb4f974[_0x44c3ab(316)](1));
-  const [_0x2cadc8, _0x16a92b] = _0xb4f974[_0x44c3ab(309)](",")[_0x44c3ab(301)](Number);
-  return [_0x877670 ? -_0x2cadc8 : _0x2cadc8, _0x16a92b];
-}
-`
-
 export function patcherExec(fileContents) {
     let allFilesExist = true;
     config.places.forEach(place => {
@@ -97,7 +75,17 @@ export function patcherExec(fileContents) {
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfWaterConfig, endOfWaterConfig, waterMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfBuildingsConfig, endOfBuildingsConfig, buildingsMapConfig);
     console.log("Fixing pathfinding for negative longitudes");
-    fileContents.INDEX = fileContents.INDEX.replace(oldStrCoords, newStrCoords);
+    const obfuscatedLabel = /strCoords\((_[a-zA-Z0-9]{8})\)/gm.exec(fileContents.INDEX)[1];
+    const findFunctionContents = /function strCoords\(_[a-zA-Z0-9]{8}\) {(.|\n)*;\n}/gm;
+    const match = findFunctionContents.exec(fileContents.INDEX);
+    const startInd = match.index;
+    const endInd = startInd + match[0].length;
+    let functionContents = fileContents.INDEX.substring(startInd, endInd);
+    functionContents = functionContents.replaceAll('"-"', '","');
+    functionContents = functionContents.replace(`${obfuscatedLabel}[0]`, `${obfuscatedLabel}[0].toFixed(8)`);
+    functionContents = functionContents.replace(`${obfuscatedLabel}[1]`, `${obfuscatedLabel}[1].toFixed(8)`);
+    fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startInd, endInd, functionContents);
+    console.log("Modifying airport layers");
 
     //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
     fileContents.GAMEMAIN = fileContents.GAMEMAIN.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],').replaceAll("showOceanFoundations: layersToShow.oceanFoundations", "showOceanFoundations: !layersToShow.oceanFoundations");
@@ -137,9 +125,8 @@ export function patcherExec(fileContents) {
       }`;
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfAirportsConfig, endOfAirportsConfig, newAirportsConfig);
     config.places.forEach(place => {
-      if(!fs.existsSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`)) {
-        fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
-      }
+      fs.rmSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`, { recursive: true, force: true });
+      fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/buildings_index.json`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/demand_data.json`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/roads.geojson`);

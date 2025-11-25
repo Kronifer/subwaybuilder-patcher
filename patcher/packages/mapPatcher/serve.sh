@@ -1,1 +1,1 @@
-./map_tiles/pmtiles serve ../map_tiles
+./map_tiles/pmtiles serve ./map_tiles
