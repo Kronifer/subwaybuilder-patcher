@@ -125,6 +125,7 @@ export function patcherExec(fileContents) {
       }`;
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfAirportsConfig, endOfAirportsConfig, newAirportsConfig);
     config.places.forEach(place => {
+      // Dont even risk it i dont wanna gzip gzipped files again
       fs.rmSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`, { recursive: true, force: true });
       fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/buildings_index.json`);
