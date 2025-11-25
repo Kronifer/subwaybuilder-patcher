@@ -97,7 +97,7 @@ Promise.all(promises).then((mods) => {
         console.log("Writing patched app to disk");
         fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar`, `${import.meta.dirname}/../SubwayBuilderPatched.app/Contents/Resources/app.asar`, { recursive: true });
         fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar.unpacked`, `${import.meta.dirname}/../SubwayBuilderPatched.app/Contents/Resources/app.asar.unpacked`, { recursive: true });
-        fs.copyFileSync(`${patchedAppPath}/Contents/Resources/app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.17.3.dylib`, `${patchedAppPath}/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries`);
+        fs.copyFileSync(`${patchedAppPath}/Contents/Resources/app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.17.3.dylib`, `${patchedAppPath}/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvips-cpp.8.17.3.dylib`);
         config.places.forEach((place) => {
             const sourceMapDataPath = `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/data/${place.code}/`;
             const targetMapDataPath = `${patchedAppPath}/Contents/Resources/data/${place.code}/`;
