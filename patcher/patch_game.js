@@ -99,16 +99,18 @@ Promise.all(promises).then((mods) => {
         fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar`, `${import.meta.dirname}/../SubwayBuilderPatched.app/Contents/Resources/app.asar`, { recursive: true });
         fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar.unpacked`, `${import.meta.dirname}/../SubwayBuilderPatched.app/Contents/Resources/app.asar.unpacked`, { recursive: true });
         fs.copyFileSync(`${patchedAppPath}/Contents/Resources/app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.17.3.dylib`, `${patchedAppPath}/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvips-cpp.8.17.3.dylib`);
-        if(config.packagesToRun.indexOf('mapPatcher') !== -1) {
-        config2.places.forEach((place) => {
-            const sourceMapDataPath = `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/data/${place.code}/`;
-            const targetMapDataPath = `${patchedAppPath}/Contents/Resources/data/${place.code}/`;
-            if (!fs.existsSync(`${patchedAppPath}/Contents/Resources/data/`)) {
-                fs.mkdirSync(`${patchedAppPath}/Contents/Resources/data/`);
-            }
-            console.log(`Adding data for ${place.name}`);
-            fs.cpSync(sourceMapDataPath, targetMapDataPath, { recursive: true });
-        });
+        fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/data`, `${patchedAppPath}/Contents/Resources/data`, { recursive: true });
+        //if(config.packagesToRun.indexOf('mapPatcher') !== -1) {
+        //    config2.places.forEach((place) => {
+        //        const sourceMapDataPath = `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/data/${place.code}/`;
+        //        const targetMapDataPath = `${patchedAppPath}/Contents/Resources/data/${place.code}/`;
+        //        if (!fs.existsSync(`${patchedAppPath}/Contents/Resources/data/`)) {
+        //            fs.mkdirSync(`${patchedAppPath}/Contents/Resources/data/`);
+        //        }
+        //        console.log(`Adding data for ${place.name}`);
+        //        fs.cpSync(sourceMapDataPath, targetMapDataPath, { recursive: true });
+        //    });
+        //}
         console.log('Clearing extended attributes');
         try {
             execSync(`xattr -cr "${patchedAppPath}"`);
