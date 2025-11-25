@@ -462,17 +462,17 @@ const processAllData = async (place) => {
   const processedConnections = processPlaceConnections(place, rawBuildings, rawPlaces);
 
   console.log('Writing finished data for', place.code)
-  fs.writeFileSync(`./processed_data/${place.code}/buildings_index.json`, JSON.stringify(processedBuildings), { encoding: 'utf8' });
-  fs.cpSync(`./raw_data/${place.code}/roads.geojson`, `./processed_data/${place.code}/roads.geojson`);
-  fs.cpSync(`./raw_data/${place.code}/runways_taxiways.geojson`, `./processed_data/${place.code}/runways_taxiways.geojson`);
-  fs.writeFileSync(`./processed_data/${place.code}/demand_data.json`, JSON.stringify(processedConnections), { encoding: 'utf8' });
+  fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, JSON.stringify(processedBuildings), { encoding: 'utf8' });
+  fs.cpSync(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, `${import.meta.dirname}/processed_data/${place.code}/roads.geojson`);
+  fs.cpSync(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, `${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`);
+  fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, JSON.stringify(processedConnections), { encoding: 'utf8' });
 };
 
-if (!fs.existsSync('./processed_data')) fs.mkdirSync('./processed_data');
+if (!fs.existsSync(`${import.meta.dirname}/processed_data`)) fs.mkdirSync(`${import.meta.dirname}/processed_data`);
 config.places.forEach((place) => {
   (async () => {
-    if (fs.existsSync(`./processed_data/${place.code}`)) fs.rmSync(`./processed_data/${place.code}`, { recursive: true, force: true });
-    fs.mkdirSync(`./processed_data/${place.code}`)
+    if (fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}`)) fs.rmSync(`${import.meta.dirname}/processed_data/${place.code}`, { recursive: true, force: true });
+    fs.mkdirSync(`${import.meta.dirname}/processed_data/${place.code}`)
     await processAllData(place);
     console.log(`Finished processing ${place.code}.`);
   })();

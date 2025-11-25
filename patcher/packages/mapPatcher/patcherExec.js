@@ -6,6 +6,28 @@ const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
     return string.substring(0, startIndex) + replacement + string.substring(endIndex + 1);
 };
 
+const oldStrCoords =
+`function strCoords(_0x1cd87d) {
+  return _0x1cd87d[0] + "-" + _0x1cd87d[1];
+}
+function unStrCoords(_0xb4f974) {
+  const _0x44c3ab = _0x2e04, _0x877670 = _0xb4f974["startsWith"]("-");
+  _0x877670 && (_0xb4f974 = _0xb4f974[_0x44c3ab(316)](1));
+  const [_0x2cadc8, _0x16a92b] = _0xb4f974[_0x44c3ab(309)]("-")[_0x44c3ab(301)](Number);
+  return [_0x877670 ? -_0x2cadc8 : _0x2cadc8, _0x16a92b];
+}`;
+const newStrCoords =
+`function strCoords(_0x1cd87d) {
+  return _0x1cd87d[0].toFixed(8) + "," + _0x1cd87d[1].toFixed(8); // Should be lots of detail
+}
+function unStrCoords(_0xb4f974) {
+  const _0x44c3ab = _0x2e04, _0x877670 = _0xb4f974["startsWith"](",");
+  _0x877670 && (_0xb4f974 = _0xb4f974[_0x44c3ab(316)](1));
+  const [_0x2cadc8, _0x16a92b] = _0xb4f974[_0x44c3ab(309)](",")[_0x44c3ab(301)](Number);
+  return [_0x877670 ? -_0x2cadc8 : _0x2cadc8, _0x16a92b];
+}
+`
+
 export function patcherExec(fileContents) {
     let allFilesExist = true;
     config.places.forEach(place => {
@@ -74,6 +96,8 @@ export function patcherExec(fileContents) {
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfWaterConfig, endOfWaterConfig, waterMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfBuildingsConfig, endOfBuildingsConfig, buildingsMapConfig);
+    console.log("Fixing pathfinding for negative longitudes");
+    fileContents.INDEX = fileContents.INDEX.replace(oldStrCoords, newStrCoords);
 
     //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
     fileContents.GAMEMAIN = fileContents.GAMEMAIN.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],').replaceAll("showOceanFoundations: layersToShow.oceanFoundations", "showOceanFoundations: !layersToShow.oceanFoundations");
