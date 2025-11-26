@@ -37,7 +37,7 @@ export function patcherExec(fileContents) {
             }
         }) + ", ";
     });
-    const finalCitiesList = existingListOfCitiesRaw.slice(0, -2) + ']';
+    const finalCitiesList = existingListOfCitiesRaw.slice(0, -2) + '];';
     fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startOfCitiesArea, endOfCitiesArea, finalCitiesList);
     console.log('Extracting existing map config')
     const startOfMapConfig = fileContents.GAMEMAIN.indexOf('const sources = {') + 'const sources = '.length; // will give us the start of the config
@@ -74,6 +74,18 @@ export function patcherExec(fileContents) {
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfWaterConfig, endOfWaterConfig, waterMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfBuildingsConfig, endOfBuildingsConfig, buildingsMapConfig);
+    //console.log("Fixing pathfinding for negative longitudes");
+    //const obfuscatedLabel = /strCoords\((_[a-zA-Z0-9]{8})\)/gm.exec(fileContents.INDEX)[1];
+    //const findFunctionContents = /function strCoords\(_[a-zA-Z0-9]{8}\) {(.|\n)*;\n}/gm;
+    //const match = findFunctionContents.exec(fileContents.INDEX);
+    //const startInd = match.index;
+    //const endInd = startInd + match[0].length;
+    //let functionContents = fileContents.INDEX.substring(startInd, endInd);
+    //functionContents = functionContents.replaceAll('"-"', '","');
+    //functionContents = functionContents.replace(`${obfuscatedLabel}[0]`, `${obfuscatedLabel}[0].toFixed(8)`);
+    //functionContents = functionContents.replace(`${obfuscatedLabel}[1]`, `${obfuscatedLabel}[1].toFixed(8)`);
+    //fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startInd, endInd, functionContents);
+    console.log("Modifying airport layers");
 
     //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
     fileContents.GAMEMAIN = fileContents.GAMEMAIN.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],').replaceAll("showOceanFoundations: layersToShow.oceanFoundations", "showOceanFoundations: !layersToShow.oceanFoundations");
@@ -113,9 +125,9 @@ export function patcherExec(fileContents) {
       }`;
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfAirportsConfig, endOfAirportsConfig, newAirportsConfig);
     config.places.forEach(place => {
-      if(!fs.existsSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`)) {
-        fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
-      }
+      // Dont even risk it i dont wanna gzip gzipped files again
+      fs.rmSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`, { recursive: true, force: true });
+      fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/buildings_index.json`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/demand_data.json`);
       fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/roads.geojson`);
@@ -126,4 +138,5 @@ export function patcherExec(fileContents) {
       });
     });
     return fileContents;
+
 }

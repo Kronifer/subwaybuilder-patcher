@@ -215,16 +215,16 @@ const fetchAllData = async (place) => {
 
   try {
     console.time(`Writing roads for ${place.name} (${place.code})`);
-    fs.writeFileSync(`./raw_data/${place.code}/roads.geojson`, JSON.stringify(roadData), { encoding: 'utf8' });
+    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, JSON.stringify(roadData), { encoding: 'utf8' });
     console.timeEnd(`Writing roads for ${place.name} (${place.code})`);
     console.time(`Writing buildings for ${place.name} (${place.code})`);
-    fs.writeFileSync(`./raw_data/${place.code}/buildings.json`, JSON.stringify(buildingData), { encoding: 'utf8' });
+    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/buildings.json`, JSON.stringify(buildingData), { encoding: 'utf8' });
     console.timeEnd(`Writing buildings for ${place.name} (${place.code})`);
     console.time(`Writing places for ${place.name} (${place.code})`);
-    fs.writeFileSync(`./raw_data/${place.code}/places.json`, JSON.stringify(placesData), { encoding: 'utf8' });
+    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/places.json`, JSON.stringify(placesData), { encoding: 'utf8' });
     console.timeEnd(`Writing places for ${place.name} (${place.code})`);
     console.time(`Writing runways/taxiways for ${place.name} (${place.code})`);
-    fs.writeFileSync(`./raw_data/${place.code}/runways_taxiways.geojson`, JSON.stringify(runwayTaxiwayData), { encoding: 'utf8' });
+    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, JSON.stringify(runwayTaxiwayData), { encoding: 'utf8' });
     console.timeEnd(`Writing runways/taxiways for ${place.name} (${place.code})`);
   } catch (e) { // falling back to slower but more reliable big-json if files are too big
     console.time(`Writing roads for ${place.name} (${place.code})`);
@@ -232,10 +232,10 @@ const fetchAllData = async (place) => {
     console.time(`Writing places for ${place.name} (${place.code})`);
     console.time(`Writing runways/taxiways for ${place.name} (${place.code})`);
 
-    const roadsWriteStream = fs.createWriteStream(`./raw_data/${place.code}/roads.geojson`, { encoding: 'utf8' });
-    const buildingsWriteStream = fs.createWriteStream(`./raw_data/${place.code}/buildings.json`, { encoding: 'utf8' });
-    const placesWriteStream = fs.createWriteStream(`./raw_data/${place.code}/places.json`, { encoding: 'utf8' });
-    const runwaysTaxiwaysWriteStream = fs.createWriteStream(`./raw_data/${place.code}/runways_taxiways.geojson`, { encoding: 'utf8' });
+    const roadsWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, { encoding: 'utf8' });
+    const buildingsWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/buildings.json`, { encoding: 'utf8' });
+    const placesWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/places.json`, { encoding: 'utf8' });
+    const runwaysTaxiwaysWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, { encoding: 'utf8' });
 
     const roadStringifyStream = createStringifyStream({ body: roadData });
     const buildingsStringifyStream = createStringifyStream({ body: buildingData });
@@ -268,7 +268,7 @@ const fetchAllData = async (place) => {
   }
 };
 
-if (!fs.existsSync('./raw_data')) fs.mkdirSync('./raw_data');
+if (!fs.existsSync(`${import.meta.dirname}/raw_data`)) fs.mkdirSync(`${import.meta.dirname}/raw_data`);
 config.places.forEach((place) => {
   fetchAllData(place);
 });
