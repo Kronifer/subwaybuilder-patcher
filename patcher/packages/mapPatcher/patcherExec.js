@@ -74,17 +74,17 @@ export function patcherExec(fileContents) {
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfParksMapConfig, endOfParksMapConfig, parksMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfWaterConfig, endOfWaterConfig, waterMapConfig);
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfBuildingsConfig, endOfBuildingsConfig, buildingsMapConfig);
-    console.log("Fixing pathfinding for negative longitudes");
-    const obfuscatedLabel = /strCoords\((_[a-zA-Z0-9]{8})\)/gm.exec(fileContents.INDEX)[1];
-    const findFunctionContents = /function strCoords\(_[a-zA-Z0-9]{8}\) {(.|\n)*;\n}/gm;
-    const match = findFunctionContents.exec(fileContents.INDEX);
-    const startInd = match.index;
-    const endInd = startInd + match[0].length;
-    let functionContents = fileContents.INDEX.substring(startInd, endInd);
-    functionContents = functionContents.replaceAll('"-"', '","');
-    functionContents = functionContents.replace(`${obfuscatedLabel}[0]`, `${obfuscatedLabel}[0].toFixed(8)`);
-    functionContents = functionContents.replace(`${obfuscatedLabel}[1]`, `${obfuscatedLabel}[1].toFixed(8)`);
-    fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startInd, endInd, functionContents);
+    //console.log("Fixing pathfinding for negative longitudes");
+    //const obfuscatedLabel = /strCoords\((_[a-zA-Z0-9]{8})\)/gm.exec(fileContents.INDEX)[1];
+    //const findFunctionContents = /function strCoords\(_[a-zA-Z0-9]{8}\) {(.|\n)*;\n}/gm;
+    //const match = findFunctionContents.exec(fileContents.INDEX);
+    //const startInd = match.index;
+    //const endInd = startInd + match[0].length;
+    //let functionContents = fileContents.INDEX.substring(startInd, endInd);
+    //functionContents = functionContents.replaceAll('"-"', '","');
+    //functionContents = functionContents.replace(`${obfuscatedLabel}[0]`, `${obfuscatedLabel}[0].toFixed(8)`);
+    //functionContents = functionContents.replace(`${obfuscatedLabel}[1]`, `${obfuscatedLabel}[1].toFixed(8)`);
+    //fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startInd, endInd, functionContents);
     console.log("Modifying airport layers");
 
     //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
