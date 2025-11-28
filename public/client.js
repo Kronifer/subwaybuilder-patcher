@@ -66,7 +66,7 @@ const friendlyNames = {
     'addTrains': 'New Trains (mhmoeller)',
     'subwaybuilder-addtrains': 'New Trains (mhmoeller)',
     'settingsTweaks': 'Settings Tweaks (slurry)',
-    'subwaybuilder-patcher': 'Settings Tweaks (slurry)'
+    'subwaybuilder-patcher-settingsTweaks': 'Settings Tweaks (slurry)'
 };
 
 // --- TEMPLATES ---
@@ -213,6 +213,16 @@ function renderSettingsTweaksEditor(pkgName, filename, config) {
 
     const numInp = (key, val) => `<input type="number" id="inp-${key}" value="${val}" style="width:100px; padding:5px;">`;
     const speeds = config.gameSpeeds || [1, 25, 250, 500];
+    const elevationMultipliers = config.elevation_multipliers || [4.5, 2, 1, 0.3, 0.8];
+    const waterMultipliers     = config.water_multipliers || [1.44444, 1.5, 3, 10, 2.5];
+    const elevationThresholds  = config.elevation_thresholds || [-100, -24, -10, -3, 4.5];
+    
+    const bondDefaults = {
+        SMALL: { principal: 1e8, interestRate: 0.1, requiredDailyRevenue: 1e7 },
+        MEDIUM: { principal: 5e8, interestRate: 0.08, requiredDailyRevenue: 1e8 },
+        LARGE: { principal: 1e9, interestRate: 0.06, requiredDailyRevenue: 2e8 }
+    };
+    const bonds = config.bondParameters || bondDefaults;
     
     html += `
     <div style="background:#333; padding:10px; border-radius:4px;">
@@ -225,13 +235,13 @@ function renderSettingsTweaksEditor(pkgName, filename, config) {
         </div>
     </div>
     <div style="background:#333; padding:10px; border-radius:4px;">
-        <label><input type="checkbox" id="chk-radius" ${config.changeMinTurnRadius ? 'checked' : ''}> <strong>Change Min Turn Radius</strong></label>
+        <label><input type="checkbox" id="chk-radius" ${config.changeMinTurnRadius ? 'checked' : ''}> <strong>Change Minimum Turn Radius</strong></label>
         <div id="div-radius" style="margin-top:10px; display:${config.changeMinTurnRadius ? 'block' : 'none'}; padding-left:20px;">
             <label>Radius (m): ${numInp('radius', config.minTurnRadius)}</label>
         </div>
     </div>
     <div style="background:#333; padding:10px; border-radius:4px;">
-        <label><input type="checkbox" id="chk-slope" ${config.changeMaxSlope ? 'checked' : ''}> <strong>Change Max Slope</strong></label>
+        <label><input type="checkbox" id="chk-slope" ${config.changeMaxSlope ? 'checked' : ''}> <strong>Change Maximum Slope</strong></label>
         <div id="div-slope" style="margin-top:10px; display:${config.changeMaxSlope ? 'block' : 'none'}; padding-left:20px;">
             <label>Max Slope (%): ${numInp('slope', config.maxSlope)}</label>
         </div>
@@ -240,8 +250,65 @@ function renderSettingsTweaksEditor(pkgName, filename, config) {
         <label><input type="checkbox" id="chk-money" ${config.changeStartingMoney ? 'checked' : ''}> <strong>Change Starting Money</strong></label>
         <div id="div-money" style="margin-top:10px; display:${config.changeStartingMoney ? 'block' : 'none'}; padding-left:20px;">
             <label>Billions: ${numInp('money', config.startingMoney)}</label>
+            <br>
+            <label>Number of starting train cars: ${numInp('cars', config.startingTrainCars)}</label>
         </div>
     </div>
+    <div style="background:#333; padding:10px; border-radius:4px;">
+        <label><input type="checkbox" id="chk-crossover" ${config.changeScissorLength ? 'checked' : ''}> <strong>Change Scissor Crossover Length</strong></label>
+        <div id="div-crossover" style="margin-top:10px; display:${config.changeScissorLength ? 'block' : 'none'}; padding-left:20px;">
+            <label>Scissor Crossover Length (m): ${numInp('crossover', config.scissorLength)}</label>
+        </div>
+    </div>
+    
+    <div style="background:#333; padding:10px; border-radius:4px;">
+        <label><input type="checkbox" id="chk-construction" ${config.changeConstructionCosts ? 'checked' : ''}> <strong>Change Construction Costs</strong></label>
+        <div id="div-construction" style="margin-top:10px; display:${config.changeConstructionCosts ? 'block' : 'none'}; padding-left:20px;">
+            <label>Single Track Multiplier: ${numInp('single_multiplier', config.single_multiplier ?? 1.0)}</label>
+            <br>
+            <label>Quad Track Multiplier: ${numInp('quad_multiplier', config.quad_multiplier ?? 1.0)}</label>
+            <br>
+            <p style="font-size:0.8rem; color:#aaa;">Enter 5 elevation multipliers (deep bore, standard tunnel, cut and cover, at grade, elevated):</p>
+            <div style="display:flex; gap:10px;">
+                ${elevationMultipliers.map((v,i) => `<input type="number" class="inp-elevation" id="inp-elevation-${i}" value="${v}" style="width:70px;">`).join('')}
+            </div>
+            <p style="font-size:0.8rem; color:#aaa; margin-top:10px;">Enter 5 water multipliers (deep bore, standard tunnel, cut and cover, at grade, elevated):</p>
+            <div style="display:flex; gap:10px;">
+                ${waterMultipliers.map((v,i) => `<input type="number" class="inp-water" id="inp-water-${i}" value="${v}" style="width:70px;">`).join('')}
+            </div>
+            <p style="font-size:0.8rem; color:#aaa; margin-top:10px;">Enter 5 elevation thresholds (lowest Z-level where each elevation zone begins):</p>
+            <div style="display:flex; gap:10px;">
+                ${elevationThresholds.map((v,i) => `<input type="number" class="inp-threshold" id="inp-threshold-${i}" value="${v}" style="width:70px;">`).join('')}
+            </div>
+        </div>
+    </div>
+    
+    <div style="background:#333; padding:10px; border-radius:4px;">
+        <label><input type="checkbox" id="chk-bonds" ${config.changeBonds ? 'checked' : ''}> <strong>Change Bond Parameters</strong></label>
+        <div id="div-bonds" style="margin-top:10px; display:${config.changeBonds ? 'block' : 'none'}; padding-left:20px;">
+            <h4 style="color:#ccc;">Small Bond</h4>
+            <div style="padding-left:20px;">
+                <label>Principal (millions): ${numInp('bond-small-principal', bonds.SMALL.principal / 1e6)}</label><br>
+                <label>Interest Rate: ${numInp('bond-small-interest', bonds.SMALL.interestRate)}</label><br>
+                <label>Required Daily Revenue (millions): ${numInp('bond-small-revenue', bonds.SMALL.requiredDailyRevenue / 1e6)}</label>
+            </div>
+
+            <h4 style="color:#ccc; margin-top:10px;">Medium Bond</h4>
+            <div style="padding-left:20px;">
+                <label>Principal (millions): ${numInp('bond-medium-principal', bonds.MEDIUM.principal / 1e6)}</label><br>
+                <label>Interest Rate: ${numInp('bond-medium-interest', bonds.MEDIUM.interestRate)}</label><br>
+                <label>Required Daily Revenue (millions): ${numInp('bond-medium-revenue', bonds.MEDIUM.requiredDailyRevenue / 1e6)}</label>
+            </div>
+
+            <h4 style="color:#ccc; margin-top:10px;">Large Bond</h4>
+            <div style="padding-left:20px;">
+                <label>Principal (millions): ${numInp('bond-large-principal', bonds.LARGE.principal / 1e6)}</label><br>
+                <label>Interest Rate: ${numInp('bond-large-interest', bonds.LARGE.interestRate)}</label><br>
+                <label>Required Daily Revenue (millions): ${numInp('bond-large-revenue', bonds.LARGE.requiredDailyRevenue / 1e6)}</label>
+            </div>
+        </div>
+    </div>
+    
     </div>
     <button id="save-tweaks-btn" class="btn-primary" style="margin-top:20px;">Save Settings</button>
     <p id="save-status" style="margin-top:5px;"></p>`;
@@ -257,9 +324,15 @@ function renderSettingsTweaksEditor(pkgName, filename, config) {
     toggle('chk-radius', 'div-radius');
     toggle('chk-slope', 'div-slope');
     toggle('chk-money', 'div-money');
+    toggle('chk-crossover', 'div-crossover');
+    toggle('chk-construction', 'div-construction');
+    toggle('chk-bonds', 'div-bonds');
 
     document.getElementById('save-tweaks-btn').addEventListener('click', () => {
         const speeds = Array.from(document.querySelectorAll('.inp-speed')).map(i => parseInt(i.value));
+        const elevationMultipliers = Array.from(document.querySelectorAll('.inp-elevation')).map(i => parseFloat(i.value));
+        const waterMultipliers     = Array.from(document.querySelectorAll('.inp-water')).map(i => parseFloat(i.value));
+        const elevationThresholds  = Array.from(document.querySelectorAll('.inp-threshold')).map(i => parseFloat(i.value));
         const newConfig = {
             changeGameSpeeds: document.getElementById('chk-gameSpeed').checked,
             gameSpeeds: speeds,
@@ -268,7 +341,34 @@ function renderSettingsTweaksEditor(pkgName, filename, config) {
             changeMaxSlope: document.getElementById('chk-slope').checked,
             maxSlope: parseInt(document.getElementById('inp-slope').value),
             changeStartingMoney: document.getElementById('chk-money').checked,
-            startingMoney: parseInt(document.getElementById('inp-money').value)
+            startingMoney: parseInt(document.getElementById('inp-money').value),
+            startingTrainCars: parseInt(document.getElementById('inp-cars').value),
+            changeScissorLength: document.getElementById('chk-crossover').checked,
+            scissorLength: parseInt(document.getElementById('inp-crossover').value),
+            changeConstructionCosts: document.getElementById('chk-construction').checked,
+            single_multiplier: parseFloat(document.getElementById('inp-single_multiplier').value),
+            quad_multiplier: parseFloat(document.getElementById('inp-quad_multiplier').value),
+            elevation_multipliers: elevationMultipliers,
+            water_multipliers: waterMultipliers,
+            elevation_thresholds: elevationThresholds,
+            changeBonds: document.getElementById('chk-bonds').checked,
+            bondParameters: {
+                SMALL: {
+                    principal: parseFloat(document.getElementById('inp-bond-small-principal').value) * 1e6,
+                    interestRate: parseFloat(document.getElementById('inp-bond-small-interest').value),
+                    requiredDailyRevenue: parseFloat(document.getElementById('inp-bond-small-revenue').value) * 1e6
+                },
+                MEDIUM: {
+                    principal: parseFloat(document.getElementById('inp-bond-medium-principal').value) * 1e6,
+                    interestRate: parseFloat(document.getElementById('inp-bond-medium-interest').value),
+                    requiredDailyRevenue: parseFloat(document.getElementById('inp-bond-medium-revenue').value) * 1e6
+                },
+                LARGE: {
+                    principal: parseFloat(document.getElementById('inp-bond-large-principal').value) * 1e6,
+                    interestRate: parseFloat(document.getElementById('inp-bond-large-interest').value),
+                    requiredDailyRevenue: parseFloat(document.getElementById('inp-bond-large-revenue').value) * 1e6
+                }
+            }
         };
         const fileContent = `const config = ${JSON.stringify(newConfig, null, 4)};\n\nexport default config;`;
         saveFile(pkgName, filename, fileContent);
