@@ -1,5 +1,5 @@
 const config = {
-  "subwaybuilderLocation": "C:\\Users\\mhege\\AppData\\Local\\Programs\\Subway Builder\\", 
+  "subwaybuilderLocation": "C:\\Users\\runke\\AppData\\Local\\Programs\\Subway Builder\\", 
   "platform": "windows", 
   "packagesToRun": [
   "mapPatcher"

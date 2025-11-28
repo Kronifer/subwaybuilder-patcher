@@ -29,7 +29,7 @@ export function patcherExec(fileContents) {
             code: place.code,
             description: place.description,
             population: place.population,
-            initialViewState: {
+            initialViewState: place.initialViewState ? place.initialViewState : {
                 zoom: 13.5,
                 latitude: (place.bbox[1] + place.bbox[3]) / 2,
                 longitude: (place.bbox[0] + place.bbox[2]) / 2,
