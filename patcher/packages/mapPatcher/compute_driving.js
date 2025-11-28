@@ -20,6 +20,8 @@ config.places.forEach(async place => {
                 points.push(coord);
             })
         });
+        pop.drivingDistance = Math.round(j.routes[0].distance);
+        pop.drivingSeconds = Math.round(j.routes[0].duration);
         pop.drivingPath = points;
         console.log(`Processed pop ${ticker++} of ${totalPops} for ${place.code}`);
     }
