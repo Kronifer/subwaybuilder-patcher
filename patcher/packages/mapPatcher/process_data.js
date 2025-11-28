@@ -453,8 +453,8 @@ const processAllData = async (place) => {
   };
 
   console.log('Reading raw data for', place.code);
-  const rawBuildings = await readJsonFile(`./raw_data/${place.code}/buildings.json`);
-  const rawPlaces = await readJsonFile(`./raw_data/${place.code}/places.json`);
+  const rawBuildings = await readJsonFile(`${import.meta.dirname}/raw_data/${place.code}/buildings.json`);
+  const rawPlaces = await readJsonFile(`${import.meta.dirname}/raw_data/${place.code}/places.json`);
 
   console.log('Processing Buildings for', place.code)
   const processedBuildings = processBuildings(place, rawBuildings);
