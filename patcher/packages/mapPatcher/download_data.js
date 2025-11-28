@@ -197,7 +197,7 @@ out geom;
 */
 
 const fetchAllData = async (place) => {
-  if (!fs.existsSync(`./raw_data/${place.code}`)) fs.mkdirSync(`./raw_data/${place.code}`);
+  if (!fs.existsSync(`${import.meta.dirname}/raw_data/${place.code}`)) fs.mkdirSync(`${import.meta.dirname}/raw_data/${place.code}`);
   console.log(`Fetching ${place.name} (${place.code}) - May take a while`);
   const convertedBoundingBox = convertBbox(place.bbox);
   console.time(`${place.name} (${place.code}) Road Data Fetch`);
