@@ -1,7 +1,7 @@
 import fs from 'fs';
 import config from './config.js';
 import config2 from '../../../config.js'
-import { exec, execSync } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { generateThumbnail } from './utils/create_thumbnail.js';
 
 const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
@@ -22,9 +22,10 @@ export function patcherExec(fileContents) {
     console.log("Starting local tile server for thumbnail generation");
     let childProcess;
     if (config2.platform === 'windows')
-      childProcess = exec('powershell ./serve.ps1', {cwd: `${import.meta.dirname}`});
+      childProcess = spawn('./pmtiles.exe', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
     else
-      childProcess = exec(`./serve.sh`, {cwd: `${import.meta.dirname}`});
+      childProcess = spawn('./pmtiles', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
+    console.log("Started pmtiles with PID: " + childProcess.pid);
     console.log("Modifying cities list");
     const startOfCitiesArea = fileContents.INDEX.indexOf('const cities = [{') + 'const cities = '.length; // will give us the start of the array
     const endOfCitiesArea = fileContents.INDEX.indexOf('}];', startOfCitiesArea) + 2;
