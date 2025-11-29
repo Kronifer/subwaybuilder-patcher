@@ -14,12 +14,12 @@ call npm install
 
 echo.
 echo  > Step 2/2: Installing GUI dependencies...
-call npm install express socket.io open big-json
+call npm install express socket.io open big-json --save
 
 echo  > Step 2/2: Installing mapPatcher dependencies...
 cd patcher/packages/mapPatcher
 call npm install
-call npm install adm-zip
+call npm install adm-zip --save
 cd ../../..
 
 echo.
