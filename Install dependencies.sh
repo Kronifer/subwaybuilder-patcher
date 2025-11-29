@@ -22,7 +22,7 @@ npm install
 
 echo
 echo " > Step 2/2: Installing GUI dependencies..."
-npm install express socket.io open big-json
+npm install express socket.io open big-json --save
 
 echo " > Step 2/2: Installing mapPatcher dependencies..."
 cd patcher/packages/mapPatcher || {
@@ -30,7 +30,7 @@ cd patcher/packages/mapPatcher || {
     exit 1
 }
 npm install
-npm install adm-zip
+npm install adm-zip --save
 cd ../../..
 
 echo
