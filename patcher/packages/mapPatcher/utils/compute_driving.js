@@ -1,9 +1,9 @@
 import fs from 'fs';
-import config from './config.js';
+import config from '../config.js';
 
 config.places.forEach(async place => {
     console.log(`Processing driving paths for ${place.code}`);
-    const demand = JSON.parse(fs.readFileSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`));
+    const demand = JSON.parse(fs.readFileSync(`${import.meta.dirname}/../processed_data/${place.code}/demand_data.json`));
     let ticker = 0;
     const totalPops = demand.pops.length;
     for(let pop of demand.pops) {
@@ -25,5 +25,5 @@ config.places.forEach(async place => {
         pop.drivingPath = points;
         console.log(`Processed pop ${ticker++} of ${totalPops} for ${place.code}`);
     }
-    fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, JSON.stringify(demand));
+    fs.writeFileSync(`${import.meta.dirname}/../processed_data/${place.code}/demand_data.json`, JSON.stringify(demand));
 })

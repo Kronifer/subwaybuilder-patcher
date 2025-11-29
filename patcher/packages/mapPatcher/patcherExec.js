@@ -1,6 +1,8 @@
 import fs from 'fs';
 import config from './config.js';
-import { execSync } from 'child_process';
+import config2 from '../../../config.js'
+import { exec, execSync } from 'child_process';
+import { generateThumbnail } from './utils/create_thumbnail.js';
 
 const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
     return string.substring(0, startIndex) + replacement + string.substring(endIndex + 1);
@@ -17,13 +19,18 @@ export function patcherExec(fileContents) {
     if(!allFilesExist) {
         process.exit(1);
     }
+    console.log("Starting local tile server for thumbnail generation");
+    let childProcess;
+    if (config2.platform === 'windows')
+      childProcess = exec('powershell ./serve.ps1', {cwd: `${import.meta.dirname}`});
+    else
+      childProcess = exec(`./serve.sh`, {cwd: `${import.meta.dirname}`});
     console.log("Modifying cities list");
     const startOfCitiesArea = fileContents.INDEX.indexOf('const cities = [{') + 'const cities = '.length; // will give us the start of the array
     const endOfCitiesArea = fileContents.INDEX.indexOf('}];', startOfCitiesArea) + 2;
     if (startOfCitiesArea == -1 || endOfCitiesArea == -1) throw new Error("Could not find cities array in index.js");
     let existingListOfCitiesRaw = fileContents.INDEX.substring(startOfCitiesArea, endOfCitiesArea - 1) + ", ";
     config.places.forEach(place => {
-        fs.cpSync(`${import.meta.dirname}/placeholder_mapimage.svg`, `${fileContents.PATHS.RENDERERDIR}/city-maps/${place.code.toLowerCase()}.svg`);
         existingListOfCitiesRaw += JSON.stringify({
             name: place.name,
             code: place.code,
@@ -124,19 +131,32 @@ export function patcherExec(fileContents) {
         }
       }`;
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfAirportsConfig, endOfAirportsConfig, newAirportsConfig);
+    let counter = 0;
+    let promises = [];
+    console.log("Copying processed data into build directory and generating thumbnails");
     config.places.forEach(place => {
-      // Dont even risk it i dont wanna gzip gzipped files again
-      fs.rmSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`, { recursive: true, force: true });
-      fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
-      fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/buildings_index.json`);
-      fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/demand_data.json`);
-      fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/roads.geojson`);
-      fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/runways_taxiways.geojson`);
-      const listOfPlaceFiles = fs.readdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
-      listOfPlaceFiles.forEach(fileName => {
-        execSync(`gzip -f ${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/${fileName}`);
-      });
+      promises.push(new Promise((resolve) => {
+        generateThumbnail(place.code).then((svgString) => {
+          fs.rmSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`, { recursive: true, force: true });
+          fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/buildings_index.json`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/demand_data.json`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/roads.geojson`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/runways_taxiways.geojson`);
+          fs.writeFileSync(`${fileContents.PATHS.RENDERERDIR}/city-maps/${place.code.toLowerCase()}.svg`, svgString);
+          const listOfPlaceFiles = fs.readdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
+          listOfPlaceFiles.forEach(fileName => {
+            execSync(`gzip -f ${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/${fileName}`);
+          });
+          console.log(`Finished copying amd compressing data for ${place.code} (${++counter} of ${config.places.length})`);
+          resolve();
+        });
+      }));
     });
-    return fileContents;
-
+    return Promise.all(promises).then(() => {
+      console.log("Killing tile server process");
+      childProcess.kill();
+      console.log("Finished adding maps!");
+      return fileContents;
+    });
 }
