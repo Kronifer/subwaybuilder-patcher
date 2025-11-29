@@ -61,9 +61,10 @@ function writeFullConfig(platform, sbPath, packages) {
 
     // Using JSON.stringify for the path ensures correct escaping
     const packagesJson = JSON.stringify(packages, null, 2).replace(/\n/g, '\n  ');
-    const fileContent = `const config = {
+    const fileContent = `// See config_macos, config_linux, config_linux for examples
+const config = {
   "subwaybuilderLocation": ${JSON.stringify(safePath)}, 
-  "platform": "${platform}", 
+  "platform": "${platform}", // 'macos', 'linux' or 'windows'
   "packagesToRun": ${packagesJson}
 };
 
