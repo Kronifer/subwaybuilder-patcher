@@ -429,6 +429,120 @@ Object.values(processedBuildings).forEach(b => {
 
   return optimizedIndex;
 }
+// Converts water.geojson to ocean_depth_index.json
+const processWater = (place) => {
+
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  const inputPath = `${import.meta.dirname}/raw_data/${place.code}/water.geojson`;
+  if (!fs.existsSync(inputPath)) {
+    console.warn(`No water.geojson found for ${place.code}`);
+    return null;
+  }
+  const geojson = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
+  if (!geojson.features || geojson.features.length === 0) {
+    console.warn(`No water features found in ${inputPath}`);
+    return null;
+  }
+
+  // Calculate global bounds
+  geojson.features.forEach(f => {
+    const bbox = turf.bbox(f);
+    if (bbox[0] < minLon) minLon = bbox[0];
+    if (bbox[1] < minLat) minLat = bbox[1];
+    if (bbox[2] > maxLon) maxLon = bbox[2];
+    if (bbox[3] > maxLat) maxLat = bbox[3];
+  });
+  const bounds = [minLon, minLat, maxLon, maxLat];
+
+  // Cell size (from ocean_depth.py, cs_y = 0.0027)
+  const cs_y = 0.0027;
+  const center_lat = (minLat + maxLat) / 2.0;
+  const cs_x = cs_y / Math.cos(center_lat * Math.PI / 180);
+  const width = maxLon - minLon;
+  const height = maxLat - minLat;
+  const cols = Math.ceil(width / cs_x);
+  const rows = Math.ceil(height / cs_y);
+
+  // Build polygons array
+  const polygons = [];
+  
+  geojson.features.forEach(f => {
+    const type = f.geometry.type;
+    const coordinates = f.geometry.coordinates;
+
+    if (type === 'Polygon') {
+      const rings = coordinates;
+      // Calculate bbox for this polygon (from exterior ring)
+      const polyFeature = turf.polygon(rings);
+      const bbox = turf.bbox(polyFeature);
+      
+      polygons.push({
+        b: bbox,
+        d: -4,
+        p: rings
+      });
+    } else if (type === 'MultiPolygon') {
+      // Flatten MultiPolygon into individual Polygons
+      coordinates.forEach(polyCoords => {
+        const rings = polyCoords;
+        const polyFeature = turf.polygon(rings);
+        const bbox = turf.bbox(polyFeature);
+        
+        polygons.push({
+          b: bbox,
+          d: -4,
+          p: rings
+        });
+      });
+    }
+  });
+
+  // Assign polygons to grid cells
+  let cellsDict = {};
+  polygons.forEach((poly, i) => {
+    const bbox = poly.b;
+    let start_col = Math.floor((bbox[0] - minLon) / cs_x);
+    let end_col = Math.floor((bbox[2] - minLon) / cs_x);
+    let start_row = Math.floor((bbox[1] - minLat) / cs_y);
+    let end_row = Math.floor((bbox[3] - minLat) / cs_y);
+    
+    start_col = Math.max(0, start_col);
+    end_col = Math.min(cols - 1, end_col);
+    start_row = Math.max(0, start_row);
+    end_row = Math.min(rows - 1, end_row);
+    
+    for (let c = start_col; c <= end_col; c++) {
+      for (let r = start_row; r <= end_row; r++) {
+        const key = `${c},${r}`;
+        if (!cellsDict[key]) cellsDict[key] = [];
+        cellsDict[key].push(i);
+      }
+    }
+  });
+
+  // Convert cellsDict to list
+  const cells_list = Object.keys(cellsDict).map((key) => {
+    const [c, r] = key.split(',').map(Number);
+    return [c, r, ...cellsDict[key]];
+  });
+
+  // Stats
+  const stats = {
+    count: polygons.length,
+    minDepth: -4,
+    maxDepth: -4
+  };
+
+  // Output structure
+  return {
+    cs: cs_y,
+    bbox: bounds,
+    grid: [cols, rows],
+    cells: cells_list,
+    depths: polygons,
+    stats
+  };
+};
 
 const processAllData = async (place) => {
   const readJsonFile = (filePath) => {
@@ -460,12 +574,15 @@ const processAllData = async (place) => {
   const processedBuildings = processBuildings(place, rawBuildings);
   console.log('Processing Connections/Demand for', place.code)
   const processedConnections = processPlaceConnections(place, rawBuildings, rawPlaces);
+  console.log('Processing Water for', place.code)
+  const processedWater = processWater(place);
 
   console.log('Writing finished data for', place.code)
   fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, JSON.stringify(processedBuildings), { encoding: 'utf8' });
   fs.cpSync(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, `${import.meta.dirname}/processed_data/${place.code}/roads.geojson`);
   fs.cpSync(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, `${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`);
   fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, JSON.stringify(processedConnections), { encoding: 'utf8' });
+  if (processedWater) {fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`, JSON.stringify(processedWater), { encoding: 'utf8' });}
 };
 
 if (!fs.existsSync(`${import.meta.dirname}/processed_data`)) fs.mkdirSync(`${import.meta.dirname}/processed_data`);
