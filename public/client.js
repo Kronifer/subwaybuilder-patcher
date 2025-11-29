@@ -407,6 +407,8 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
     if (configObj.places && Array.isArray(configObj.places)) {
         configObj.places.forEach((place, index) => {
             const bboxString = place.bbox ? place.bbox.join(', ') : '';
+            const thumbnailBboxString = place.thumbnailBbox ? place.thumbnailBbox.join(', ') : '';
+            const initialViewState = place.initialViewState || {};
             html += `
             <div class="place-card" style="background: #2a2a2a; padding: 15px; margin-bottom: 15px; border-left: 3px solid #007acc; border-radius: 0 4px 4px 0;">
                 <h5 style="margin-bottom:10px; color:#007acc;">City #${index + 1}</h5>
@@ -415,9 +417,17 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
                     <div><label>Name</label><input type="text" class="inp-place-name" value="${place.name || ''}"></div>
                 </div>
                 <div style="margin-top:10px;"><label>Description</label><input type="text" class="inp-place-desc" value="${place.description || ''}"></div>
-                <div style="margin-top:10px; display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
+                <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div><label>BBox (4 numbers)</label><input type="text" class="inp-place-bbox" value="${bboxString}" placeholder="-79.4, 43.6, ..."></div>
+                    <div><label>Thumbnail BBox (optional)</label><input type="text" class="inp-place-thumbnail-bbox" value="${thumbnailBboxString}" placeholder="-79.4, 43.6, ..."></div>
                     <div><label>Population</label><input type="number" class="inp-place-pop" value="${place.population || 0}"></div>
+                </div>
+                <h5 style="margin-bottom:10px; color:#007acc;">Initial View State (Optional)</h6>
+                <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div<label>Latitude</label><input type="number" step="0.0001" class="inp-place-init-lat" value="${initialViewState.latitude || ''}"></div>
+                    <div><label>Longitude</label><input type="number" step="0.0001" class="inp-place-init-lon" value="${initialViewState.longitude || ''}"></div>
+                    <div><label>Zoom</label><input type="number" step="0.1" class="inp-place-init-zoom" value="${initialViewState.zoom || ''}"></div>
+                    <div><label>Bearing</label><input type="number" step="1" class="inp-place-init-bearing" value="${initialViewState.bearing || ''}"></div>
                 </div>
             </div>`;
         });
@@ -461,10 +471,25 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
             const name = card.querySelector('.inp-place-name').value;
             const desc = card.querySelector('.inp-place-desc').value;
             const bboxStr = card.querySelector('.inp-place-bbox').value;
+            const thumbnailBboxStr = card.querySelector('.inp-place-thumbnail-bbox').value;
+            const initLat = parseFloat(card.querySelector('.inp-place-init-lat').value);
+            const initLon = parseFloat(card.querySelector('.inp-place-init-lon').value);
+            const initZoom = parseFloat(card.querySelector('.inp-place-init-zoom').value);
+            const initBearing = parseFloat(card.querySelector('.inp-place-init-bearing').value);
+            const initialViewState = {};
+            if (!isNaN(initLat)) initialViewState.latitude = initLat;
+            if (!isNaN(initLon)) initialViewState.longitude = initLon;
+            if (!isNaN(initZoom)) initialViewState.zoom = initZoom;
+            if (!isNaN(initBearing)) initialViewState.bearing = initBearing;
+            const thumbnailBboxArray = [];
+            try {thumbnailBboxArray = thumbnailBboxStr.split(',').map(num => parseFloat(num.trim())); } catch(e) { thumbnailBboxArray=[]; }
             const pop = card.querySelector('.inp-place-pop').value;
             let bboxArray = [];
             try { bboxArray = bboxStr.split(',').map(num => parseFloat(num.trim())); } catch(e) { bboxArray=[0,0,0,0]; }
-            places.push({ code, name, description: desc, bbox: bboxArray, population: parseInt(pop) || 0 });
+            let newPlace = {code, name, description: desc, bbox: bboxArray, population: parseInt(pop) || 0 };
+            if (thumbnailBboxArray.length === 4) newPlace.thumbnailBbox = thumbnailBboxArray;
+            if (Object.keys(initialViewState).length > 0) newPlace.initialViewState = initialViewState;
+            places.push(newPlace);
         });
         const newFileContent = `const config = {
     "tile-zoom-level": 16, 
