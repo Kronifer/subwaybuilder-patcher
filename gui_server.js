@@ -88,6 +88,37 @@ app.get('/api/root-config', (req, res) => {
     res.json(current);
 });
 
+function readDefaultPaths() {
+    const paths = {};
+    const files = {
+        'linux': 'config_linux.js',
+        'macos': 'config_macos.js',
+        'windows': 'config_windows.js'
+    };
+
+    for (const [platform, filename] of Object.entries(files)) {
+        const filePath = path.join(__dirname, filename);
+        if (fs.existsSync(filePath)) {
+            try {
+                const content = fs.readFileSync(filePath, 'utf-8');
+                const pathMatch = content.match(/["']?subwaybuilderLocation["']?:\s*(["'](?:[^"'\\]|\\.)*["'])/);
+                if (pathMatch) {
+                    let rawPath = pathMatch[1].slice(1, -1);
+                    // Basic cleanup for Windows paths if they contain double backslashes
+                    paths[platform] = rawPath.replace(/\\\\/g, '\\');
+                }
+            } catch (e) {
+                console.error(`Error reading ${filename}:`, e);
+            }
+        }
+    }
+    return paths;
+}
+
+app.get('/api/default-paths', (req, res) => {
+    res.json(readDefaultPaths());
+});
+
 // --- PACKAGE HANDLING ---
 
 function normalizeFolderNames(packagesDir) {

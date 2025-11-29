@@ -750,4 +750,25 @@ async function loadRootConfig() {
     } catch(e) { console.log("No existing config found."); }
 }
 
-loadRootConfig();
+let defaultPaths = {};
+
+async function initPlatformLogic() {
+    try {
+        const res = await fetch('/api/default-paths');
+        defaultPaths = await res.json();
+    } catch (e) { console.error("Could not load default paths", e); }
+
+    const platformSelect = document.getElementById('platform-select');
+    const pathInput = document.getElementById('sb-path');
+
+    platformSelect.addEventListener('change', () => {
+        const selected = platformSelect.value;
+        if (defaultPaths[selected]) {
+            pathInput.value = defaultPaths[selected];
+        }
+    });
+
+    await loadRootConfig();
+}
+
+initPlatformLogic();
