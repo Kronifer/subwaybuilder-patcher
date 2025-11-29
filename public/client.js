@@ -475,7 +475,7 @@ export default config;`;
         saveFile(pkgName, filename, newFileContent);
     });
 
-    document.getElementById('btn-dl-tool').addEventListener('click', () => runPackageScript(pkgName, 'download_tool.js'));
+    document.getElementById('btn-dl-tool').addEventListener('click', () => runPackageScript(pkgName, 'download_tools.js'));
     document.getElementById('btn-dl-data').addEventListener('click', () => runPackageScript(pkgName, 'download_data.js'));
     document.getElementById('btn-process').addEventListener('click', () => runPackageScript(pkgName, 'process_data.js'));
     document.getElementById('btn-dl-tiles').addEventListener('click', () => runPackageScript(pkgName, 'download_tiles.js'));
@@ -497,7 +497,7 @@ let currentPkg = "";
 
 function startMapSetupSequence(pkgName) {
     currentPkg = pkgName;
-    setupQueue = ['download_tool.js', 'download_data.js', 'process_data.js', 'download_tiles.js'];
+    setupQueue = ['download_tools.js', 'download_data.js', 'process_data.js', 'download_tiles.js'];
     runNextScript();
 }
 
