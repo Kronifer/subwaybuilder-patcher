@@ -60,10 +60,12 @@ function writeFullConfig(platform, sbPath, packages) {
     const safePath = cleanPath(sbPath);
 
     // Using JSON.stringify for the path ensures correct escaping
-    const fileContent = `const config = {
+    const packagesJson = JSON.stringify(packages, null, 2).replace(/\n/g, '\n  ');
+    const fileContent = `// See config_macos, config_linux, config_linux for examples
+const config = {
   "subwaybuilderLocation": ${JSON.stringify(safePath)}, 
-  "platform": "${platform}", 
-  "packagesToRun": ${JSON.stringify(packages, null, 2)}
+  "platform": "${platform}", // 'macos', 'linux' or 'windows'
+  "packagesToRun": ${packagesJson}
 };
 
 export default config;`;
@@ -86,6 +88,37 @@ app.post('/api/root-config', (req, res) => {
 app.get('/api/root-config', (req, res) => {
     const current = readCurrentConfig();
     res.json(current);
+});
+
+function readDefaultPaths() {
+    const paths = {};
+    const files = {
+        'linux': 'config_linux.js',
+        'macos': 'config_macos.js',
+        'windows': 'config_windows.js'
+    };
+
+    for (const [platform, filename] of Object.entries(files)) {
+        const filePath = path.join(__dirname, filename);
+        if (fs.existsSync(filePath)) {
+            try {
+                const content = fs.readFileSync(filePath, 'utf-8');
+                const pathMatch = content.match(/["']?subwaybuilderLocation["']?:\s*(["'](?:[^"'\\]|\\.)*["'])/);
+                if (pathMatch) {
+                    let rawPath = pathMatch[1].slice(1, -1);
+                    // Basic cleanup for Windows paths if they contain double backslashes
+                    paths[platform] = rawPath.replace(/\\\\/g, '\\');
+                }
+            } catch (e) {
+                console.error(`Error reading ${filename}:`, e);
+            }
+        }
+    }
+    return paths;
+}
+
+app.get('/api/default-paths', (req, res) => {
+    res.json(readDefaultPaths());
 });
 
 // --- PACKAGE HANDLING ---

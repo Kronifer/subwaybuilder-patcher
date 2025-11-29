@@ -1,7 +1,9 @@
 const config = {
-  "subwaybuilderLocation": "Path/To/Game.app", // appimage location image on linux or install directory on windows (something like C:\\Users\\[username]\\AppData\\Local\\Programs\\Subway\ Builder)
-  "platform": "macos", // either 'linux' or 'windows'
-  "packagesToRun": ["mapPatcher"]
+  "subwaybuilderLocation": "/Applications/Subway Builder.app", // app location (or something like /Users/[username]/Applications/Subway Builder.app')
+  "platform": "macos", // 'macos', 'linux' or 'windows'
+  "packagesToRun": [
+    "mapPatcher"
+  ]
 };
 
 export default config;
