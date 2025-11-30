@@ -8,7 +8,7 @@ const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
     return string.substring(0, startIndex) + replacement + string.substring(endIndex + 1);
 };
 
-export function patcherExec(fileContents) {
+export async function patcherExec(fileContents) {
     let allFilesExist = true;
     config.places.forEach(place => {
         if (!fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`) || !fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`) || !fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`) || !fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`)) {
@@ -25,7 +25,21 @@ export function patcherExec(fileContents) {
       childProcess = spawn('./pmtiles.exe', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
     else
       childProcess = spawn('./pmtiles', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
+    
     console.log("Started pmtiles with PID: " + childProcess.pid);
+    
+    // Poll for server readiness instead of fixed delay
+    let serverReady = false;
+    for(let i = 0; i < 50; i++) { // Max 5 seconds
+        try {
+            await fetch('http://127.0.0.1:8080');
+            serverReady = true;
+            break;
+        } catch(e) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    if (!serverReady) console.warn("Warning: Tile server did not respond within 5s, proceeding anyway...");
     console.log("Modifying cities list");
     const startOfCitiesArea = fileContents.INDEX.indexOf('const cities = [{') + 'const cities = '.length; // will give us the start of the array
     const endOfCitiesArea = fileContents.INDEX.indexOf('}];', startOfCitiesArea) + 2;

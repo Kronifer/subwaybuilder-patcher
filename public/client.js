@@ -424,7 +424,7 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
                 </div>
                 <h5 style="margin-bottom:10px; color:#007acc;">Initial View State (Optional)</h6>
                 <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div<label>Latitude</label><input type="number" step="0.0001" class="inp-place-init-lat" value="${initialViewState.latitude || ''}"></div>
+                    <div><label>Latitude</label><input type="number" step="0.0001" class="inp-place-init-lat" value="${initialViewState.latitude || ''}"></div>
                     <div><label>Longitude</label><input type="number" step="0.0001" class="inp-place-init-lon" value="${initialViewState.longitude || ''}"></div>
                     <div><label>Zoom</label><input type="number" step="0.1" class="inp-place-init-zoom" value="${initialViewState.zoom || ''}"></div>
                     <div><label>Bearing</label><input type="number" step="1" class="inp-place-init-bearing" value="${initialViewState.bearing || ''}"></div>
