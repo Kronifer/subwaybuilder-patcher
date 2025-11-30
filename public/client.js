@@ -428,12 +428,13 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
                     <div><label>Longitude</label><input type="number" step="0.0001" class="inp-place-init-lon" value="${initialViewState.longitude || ''}"></div>
                     <div><label>Zoom</label><input type="number" step="0.1" class="inp-place-init-zoom" value="${initialViewState.zoom || ''}"></div>
                     <div><label>Bearing</label><input type="number" step="1" class="inp-place-init-bearing" value="${initialViewState.bearing || ''}"></div>
-                </div>
-            </div>`;
+                </div>`;
+            console.log(html);
         });
     } else { html += `<p>No places defined yet.</p>`; }
     html += `</div>
-        <div style="margin-top: 20px; margin-bottom:30px; border-bottom:1px solid #444; padding-bottom:20px;">
+        <div style="margin-top: 5px; margin-bottom:30px; border-bottom:1px solid #444; padding-bottom:20px; text-align: center;">
+            <button id="add-place-btn" class="btn-primary" style="width: 50%; margin-bottom: 10px">Add New Place</button>
             <button id="save-map-btn" class="btn-primary">Save Map Config</button>
             <p id="save-status" style="margin-top:5px;"></p>
         </div>
@@ -460,7 +461,33 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
         `;
 
     configFormDiv.innerHTML = html;
-
+    document.getElementById('add-place-btn').addEventListener('click', () => {
+        const placesContainer = document.getElementById('places-container');
+        const placeCount = placesContainer.querySelectorAll('.place-card').length;
+        const newPlaceHtml = `
+        <div class="place-card" style="background: #2a2a2a; padding: 15px; margin-bottom: 15px; border-left: 3px solid #007acc; border-radius: 0 4px 4px 0;">
+            <h5 style="margin-bottom:10px; color:#007acc;">City #${placeCount + 1}</h5>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>Code</label><input type="text" class="inp-place-code" value=""></div>
+                <div><label>Name</label><input type="text" class="inp-place-name" value=""></div>
+            </div>
+            <div style="margin-top:10px;"><label>Description</label><input type="text" class="inp-place-desc" value=""></div>
+            <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>BBox (4 numbers)</label><input type="text" class="inp-place-bbox" value="" placeholder="-79.4, 43.6, ..."></div>
+                <div><label>Thumbnail BBox (optional)</label><input type="text" class="inp-place-thumbnail-bbox" value="" placeholder="-79.4, 43.6, ..."></div>
+                <div><label>Population</label><input type="number" class="inp-place-pop" value="0"></div>
+            </div>
+            <h5 style="margin-bottom:10px; color:#007acc;">Initial View State (Optional)</h6>
+            <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div<label>Latitude</label><input type="number" step="0.0001" class="inp-place-init-lat" value=""></div>
+                <div><label>Longitude</label><input type="number" step="0.0001" class="inp-place-init-lon" value=""></div>
+                <div><label>Zoom</label><input type="number" step="0.1" class="inp-place-init-zoom" value=""></div>
+                <div><label>Bearing</label><input type="number" step="1" class="inp-place-init-bearing" value=""></div>
+            </div>
+        </div>`;
+        placesContainer.appendChild(new DOMParser().parseFromString(newPlaceHtml, 'text/html').body.firstChild);
+        console.log('Added new place card.');
+    });
     // EVENT LISTENERS
     document.getElementById('save-map-btn').addEventListener('click', () => {
         const bucket = document.getElementById('inp-bucket').value;
@@ -481,7 +508,7 @@ function renderMapPatcherEditor(pkgName, filename, configObj) {
             if (!isNaN(initLon)) initialViewState.longitude = initLon;
             if (!isNaN(initZoom)) initialViewState.zoom = initZoom;
             if (!isNaN(initBearing)) initialViewState.bearing = initBearing;
-            const thumbnailBboxArray = [];
+            let thumbnailBboxArray = [];
             try {thumbnailBboxArray = thumbnailBboxStr.split(',').map(num => parseFloat(num.trim())); } catch(e) { thumbnailBboxArray=[]; }
             const pop = card.querySelector('.inp-place-pop').value;
             let bboxArray = [];

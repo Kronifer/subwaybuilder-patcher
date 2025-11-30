@@ -27,8 +27,6 @@ const maxYTileCoord = lat2tile(bboxToUse[1], 12);
 const maxXTileCoord = lon2tile(bboxToUse[2], 12);
 const minYTileCoord = lat2tile(bboxToUse[3], 12);
 
-let heightByWidth = (bboxToUse[3]-bboxToUse[1])/(bboxToUse[2]-bboxToUse[0]);
-
 const allTiles = [];
 for(let x = minXTileCoord; x <= maxXTileCoord; x++) {
     for(let y = minYTileCoord; y <= maxYTileCoord; y++) {
