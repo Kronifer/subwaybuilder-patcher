@@ -17,20 +17,19 @@ echo "  (This can take a couple minutes)"
 echo "========================================================"
 echo
 
-echo " > Step 1/2: Installing standard packages..."
+echo " > Step 1/3: Installing standard packages..."
 npm install
 
-echo
-echo " > Step 2/2: Installing GUI dependencies..."
-npm install express socket.io open big-json --save
-
-echo " > Step 2/2: Installing mapPatcher dependencies..."
+echo " > Step 2/3: Installing mapPatcher dependencies..."
 cd patcher/packages/mapPatcher || {
     echo "ERROR: Could not change directory to patcher/packages/mapPatcher"
     exit 1
 }
 npm install
 npm install adm-zip --save
+
+echo  > Step 3/3: Installing map tools (pmtiles / gzip)...
+cd patcher\packages\mapPatcher
 cd ../../..
 
 echo

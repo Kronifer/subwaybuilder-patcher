@@ -174,6 +174,7 @@ async function main() {
         await installGzip();
         console.log("--------------------------------");
         console.log("Tool setup complete.");
+		process.exit(0);
     } catch (err) {
         console.error("Setup failed:", err);
         process.exit(1);
