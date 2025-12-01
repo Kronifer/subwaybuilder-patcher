@@ -15,15 +15,12 @@ Well, the program needs to know what cities you want to download and patch in. G
 
 Additionally, you need to insert the location of your SubwayBuilder install (if on linux, the appimage location, if on windows, the install directory) and you need to specify what operating system you're using (either windows or linux).
 
-also new step you need to grab the latest protomaps bucket from [maps.protomaps.com/builds](https://maps.protomaps.com/builds/) and paste the latest download link into the `protomaps-bucket` field
-
-There are valid sample configurations for windows and linux at `config_windows.js` and `config_linux.js` respectively.
+There is a sample config file in `config_example.js`. 
 
 This is a valid `config.js`:
 ```js
 const config = {
   "tile-zoom-level": 16, // zoom level for map tiles to download (16 is the max)
-  "protomaps-bucket": "https://build.protomaps.com/20251104.pmtiles", // Grab the latest download link from https://maps.protomaps.com/builds/
   "places": [
     {
       "code": "YWG",
@@ -77,5 +74,6 @@ cd scripts
 ---
 
 ok thats all thanks for reading this readme
+
 
 

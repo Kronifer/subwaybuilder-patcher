@@ -125,9 +125,9 @@ Promise.all(promises).then((mods) => {
             if (fs.existsSync(patchedAppPath)) {
                 fs.rmSync(patchedAppPath, { recursive: true, force: true });
             }
-            console.log(`Copying 'Subway Builder.app' from /Applications using ditto to not break signature...`);
+            console.log(`Copying 'Subway Builder.app' from /Applications using ditto...`);
             try {
-                execSync(`ditto "${originalAppPath}" "${patchedAppPath}"`);
+                execSync(`ditto --norsrc "${originalAppPath}" "${patchedAppPath}"`);
             } catch (error) {
                 console.error('ERROR: Failed to copy the application. Please ensure "Subway Builder.app" is in your /Applications folder.');
                 console.error(error);
@@ -148,6 +148,7 @@ Promise.all(promises).then((mods) => {
 
             console.log('Signing app...');
             try {
+                execSync(`dot_clean "${patchedAppPath}"`);
                 execSync(`xattr -cr "${patchedAppPath}"`);
             } catch (error) {
                 console.warn('Warning: Failed to clear extended attributes.');

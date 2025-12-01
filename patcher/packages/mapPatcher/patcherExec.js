@@ -8,7 +8,7 @@ const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
     return string.substring(0, startIndex) + replacement + string.substring(endIndex + 1);
 };
 
-export function patcherExec(fileContents) {
+export async function patcherExec(fileContents) {
     let allFilesExist = true;
     config.places.forEach(place => {
         if (!fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`) || !fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`) || !fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`) || !fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`)) {
@@ -25,7 +25,21 @@ export function patcherExec(fileContents) {
       childProcess = spawn('./pmtiles.exe', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
     else
       childProcess = spawn('./pmtiles', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
+    
     console.log("Started pmtiles with PID: " + childProcess.pid);
+    
+    // Poll for server readiness instead of fixed delay
+    let serverReady = false;
+    for(let i = 0; i < 50; i++) { // Max 5 seconds
+        try {
+            await fetch('http://127.0.0.1:8080');
+            serverReady = true;
+            break;
+        } catch(e) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    if (!serverReady) console.warn("Warning: Tile server did not respond within 5s, proceeding anyway...");
     console.log("Modifying cities list");
     const startOfCitiesArea = fileContents.INDEX.indexOf('const cities = [{') + 'const cities = '.length; // will give us the start of the array
     const endOfCitiesArea = fileContents.INDEX.indexOf('}];', startOfCitiesArea) + 2;
@@ -96,7 +110,7 @@ export function patcherExec(fileContents) {
     console.log("Modifying airport layers");
 
     //gameMainAfterParksMapConfigMod = gameMainAfterParksMapConfigMod.replace('"source-layer": "buildings"', '"source-layer": "building"'); // Slight discrepency in naming convention
-    fileContents.GAMEMAIN = fileContents.GAMEMAIN.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],').replaceAll("showOceanFoundations: layersToShow.oceanFoundations", "showOceanFoundations: !layersToShow.oceanFoundations");
+    fileContents.GAMEMAIN = fileContents.GAMEMAIN.replaceAll('"source-layer": "airports",', '"source-layer": "landuse",\n        filter: ["==", ["get", "kind"], "aerodrome"],');
     const startOfAirportsConfig = fileContents.GAMEMAIN.search(/{\n\s*id:\s*"airports",/);
     const endOfAirportsConfig = fileContents.GAMEMAIN.search(/}\n\s*\);\n\s*layers\.push\({\n\s*id: "general-tiles",/);
     const newAirportsConfig = `
@@ -132,6 +146,106 @@ export function patcherExec(fileContents) {
         }
       }`;
     fileContents.GAMEMAIN = stringReplaceAt(fileContents.GAMEMAIN, startOfAirportsConfig, endOfAirportsConfig, newAirportsConfig);
+
+    
+    console.log("Modifying ocean depth layers");
+    const citiesWithOcean = config.places.filter(place => fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`)).map(p => p.code);
+    const citiesWithOceanList = JSON.stringify(citiesWithOcean);
+    const vanillaCitiesList = "['ATL', 'AUS', 'BAL', 'BOS', 'CHI', 'CIN', 'CLE', 'CLT', 'DAL', 'DC', 'DEN', 'DET', 'HNL', 'HOU', 'IND', 'MIA', 'MSP', 'NYC', 'PDX', 'PHL', 'PIT', 'SAN', 'SEA', 'SF', 'SLC', 'STL']";
+
+    // Warn about cities without ocean data
+    config.places.forEach(place => {if (!citiesWithOcean.includes(place.code)) {console.log(`No ocean depth data found for ${place.name} (${place.code}). Ocean layers will be disabled.`);}});
+
+    fileContents.GAMEMAIN = fileContents.GAMEMAIN.replace(/const sources\s*=\s*\{/, `const sources = {...(${citiesWithOceanList}.indexOf(cityCode) > -1 ? { "ocean-depth-source": { type: "geojson", data: \`data/\${cityCode}_ocean.geojson\`, tolerance: 0 } } : {}),`);
+    fileContents.GAMEMAIN = fileContents.GAMEMAIN.replaceAll("showOceanFoundations: layersToShow.oceanFoundations", `showOceanFoundations: (${citiesWithOceanList}.indexOf(cityCode) > -1 || ${vanillaCitiesList}.indexOf(cityCode) > -1) ? layersToShow.oceanFoundations : !layersToShow.oceanFoundations`);
+
+    const oceanLayerBlock = `
+      "source-layer": "ocean_foundations",
+      paint: {
+        "fill-extrusion-color": [
+          "interpolate",
+          ["linear"],
+          ["abs", ["get", "depth_min"]],
+          ...OCEAN_FOUNDATION_DEPTHS.flatMap((depth) => {
+            const color2 = depth.colors[isDark ? "dark" : "light"];
+            return [depth.maxDepth, color2];
+          })
+        ],
+        "fill-extrusion-opacity": 1,
+        "fill-extrusion-height": 0,
+        "fill-extrusion-base": 0
+      },
+      layout: {
+        visibility: showOceanFoundations ? "visible" : "none"
+      }
+    });`;
+
+    const customOceanLayer = `
+    if (${citiesWithOceanList}.indexOf(cityCode) > -1) {
+        layers.push({
+            id: "ocean-depth-layer",
+            type: "fill-extrusion",
+            source: "ocean-depth-source",
+            paint: {
+                "fill-extrusion-color": ["interpolate", ["linear"], ["abs", ["get", "depth_min"]], ...OCEAN_FOUNDATION_DEPTHS.flatMap(d => [d.maxDepth, d.colors[isDark ? "dark" : "light"]])],
+                "fill-extrusion-opacity": 1,
+                "fill-extrusion-height": 0.1,
+                "fill-extrusion-base": 0.1
+            },
+            layout: { visibility: showOceanFoundations ? "visible" : "none" }
+        });
+        layers.push({
+            id: "ocean-depth-labels-custom",
+            type: "symbol",
+            source: "ocean-depth-source",
+            layout: {
+                "text-field": ["concat", ["get", "depth_min"], "m"],
+                "text-font": ["Noto Sans Medium"],
+                "text-size": ["interpolate", ["linear"], ["zoom"], 12.75, 12, 18, 20],
+                "text-rotation-alignment": "viewport",
+                "text-pitch-alignment": "viewport",
+                "text-padding": 50,
+                "text-letter-spacing": 0.1,
+                "text-anchor": "center",
+                "text-allow-overlap": false,
+                "text-ignore-placement": false,
+                "symbol-placement": "point",
+                visibility: isConstruction && showOceanFoundations ? "visible" : "none"
+            },
+            paint: {
+                "text-color": mapColors.roadLabel,
+                "text-halo-color": mapColors.roadLabelHalo,
+                "text-halo-width": 0.75,
+                "text-halo-blur": 0.25,
+                "text-opacity": ["interpolate", ["linear"], ["zoom"], 12.75, 0, 13, 1]
+            }
+        });
+    }`;
+
+    fileContents.GAMEMAIN = fileContents.GAMEMAIN.replace(oceanLayerBlock, oceanLayerBlock + customOceanLayer);
+
+    // Generate geojson for the ocean layer if data exists
+    config.places.forEach(place => {
+        const oceanPath = `${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`;
+        if (fs.existsSync(oceanPath)) {
+            const oceanData = JSON.parse(fs.readFileSync(oceanPath, 'utf-8'));
+            const features = oceanData.depths.map(d => {
+                let coords = d.p;
+                if (coords?.[0]?.[0]?.[0] && Math.abs(coords[0][0][0]) > 180) {
+                    coords = coords.map(ring => ring.map(([x, y]) => [
+                        (x / 20037508.3427892) * 180.0,
+                        (Math.atan(Math.exp(y / 20037508.3427892 * Math.PI)) * 360.0 / Math.PI) - 90.0
+                    ]));
+                }
+                return { type: "Feature", properties: { depth_min: d.d }, geometry: { type: "Polygon", coordinates: coords } };
+            });
+            
+            const publicDataDir = `${fileContents.PATHS.RENDERERDIR}data`;
+            if (!fs.existsSync(publicDataDir)) fs.mkdirSync(publicDataDir, { recursive: true });
+            fs.writeFileSync(`${publicDataDir}/${place.code}_ocean.geojson`, JSON.stringify({ type: "FeatureCollection", features }));
+        }
+    });
+
     let counter = 0;
     let promises = [];
     console.log("Copying processed data into build directory and generating thumbnails");
@@ -144,6 +258,7 @@ export function patcherExec(fileContents) {
           fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/demand_data.json`);
           fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/roads.geojson`);
           fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/runways_taxiways.geojson`);
+          if (fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`)) {fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/ocean_depth_index.json`);}
           fs.writeFileSync(`${fileContents.PATHS.RENDERERDIR}/city-maps/${place.code.toLowerCase()}.svg`, svgString);
           const listOfPlaceFiles = fs.readdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
           listOfPlaceFiles.forEach(fileName => {

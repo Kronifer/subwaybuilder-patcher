@@ -7,3 +7,5 @@ patcher/packages/*
 !patcher/packages/mapPatcher
 mapdata_processor/
 config.js
+.DS_Store
+SubwayBuilderPatched.app
