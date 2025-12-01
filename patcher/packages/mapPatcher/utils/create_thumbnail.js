@@ -28,13 +28,30 @@ const maxXTileCoord = lon2tile(bboxToUse[2], 12);
 const minYTileCoord = lat2tile(bboxToUse[3], 12);
 
 const allTiles = [];
+
+async function fetchWithRetry(url, options = {}, retries = 5, delay = 200) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const res = await fetch(url, options);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res;
+        } catch (err) {
+            if (attempt === retries) throw err; // last attempt fails
+            console.warn(`Fetch failed (attempt ${attempt}): ${err.message}. Retrying in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2; // exponential backoff (optional)
+        }
+    }
+}
+
 for(let x = minXTileCoord; x <= maxXTileCoord; x++) {
     for(let y = minYTileCoord; y <= maxYTileCoord; y++) {
-        let req = fetch(`http://127.0.0.1:8080/${cityCode}/12/${x}/${y}.mvt`)
+        let req = fetchWithRetry(`http://127.0.0.1:8080/${cityCode}/12/${x}/${y}.mvt`)
         allTiles.push(new Promise((resolve) => {
             req.then(response => response.arrayBuffer()).then(buffer => {
                 resolve({"x": x, "y": y, "buffer": buffer});
             })
+            setTimeout(() => null, 500);
         }));
     }
 };

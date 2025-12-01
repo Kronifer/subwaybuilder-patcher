@@ -1,9 +1,10 @@
 // See config_macos, config_linux, config_linux for examples
 const config = {
-  "subwaybuilderLocation": "C:\\Users\\runke\\AppData\\Local\\Programs\\Subway Builder\\", 
-  "platform": "windows", // 'macos', 'linux' or 'windows'
+  "subwaybuilderLocation": "/Applications/Subway Builder.app", // app location (or something like /Users/[username]/Applications/Subway Builder.app')
+  "platform": "macos", // 'macos', 'linux' or 'windows'
   "packagesToRun": [
-    "mapPatcher"
+    "mapPatcher",
+    "addTrains"
   ]
 };
 
