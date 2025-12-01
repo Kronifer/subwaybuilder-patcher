@@ -1,6 +1,5 @@
 const config = {
     "tile-zoom-level": 16, // zoom level for map tiles to download
-    "protomaps-bucket": "https://build.protomaps.com/20251023.pmtiles", // Protomaps bucket URL for downloading tiles
     "places": [
       {
         "code": "YYZ",
@@ -21,3 +20,4 @@ const config = {
   
 
   export default config;
+
