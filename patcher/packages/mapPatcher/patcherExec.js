@@ -25,12 +25,6 @@ export async function patcherExec(fileContents) {
       childProcess = spawn('./pmtiles.exe', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
     else
       childProcess = spawn('./pmtiles', ["serve", "."], {cwd: `${import.meta.dirname}/map_tiles`});
-
-    childProcess.stdout.on('data', (d) => console.log(`pmtiles stdout: ${d.toString()}`));
-    childProcess.stderr.on('data', (d) => console.error(`pmtiles stderr: ${d.toString()}`));
-
-    childProcess.on('exit', (code, sig) => console.error(`pmtiles exited with code=${code}, signal=${sig}`));
-
     
     console.log("Started pmtiles with PID: " + childProcess.pid);
     
