@@ -6,9 +6,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import AdmZip from 'adm-zip';
-import https from 'https';
-import fetch from 'node-fetch';
-import puppeteer from 'puppeteer';
 import os from 'os'; // Added for desktop path detection
 
 const __filename = fileURLToPath(import.meta.url);
@@ -112,43 +109,6 @@ export default config;`;
 }
 
 // --- API ROUTES ---
-// added validation and fetching protomaps link
-app.get('/api/latest-protomaps', async (req, res) => {
-  let browser = null;
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    const page = await browser.newPage();
-    await page.goto('https://maps.protomaps.com/builds/', { waitUntil: 'networkidle0', timeout: 30000 });
-
-    const links = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('a'))
-        .map(a => a.href)
-        .filter(href => href.endsWith('.pmtiles'));
-    });
-
-    if (!links || links.length === 0) {
-      return res.status(404).json({ error: 'No .pmtiles links found' });
-    }
-
-    const unique = [...new Set(links)];
-    const latest = unique.find(u => u.startsWith('https://build.protomaps.com/'));
-    if (!latest) {
-      return res.status(404).json({ error: 'No valid .pmtiles build URL found' });
-    }
-    return res.json({ url: latest });
-
-  } catch (e) {
-    console.error('Error during scraping:', e);
-    return res.status(500).json({ error: 'Failed to fetch latest build link' });
-  } finally {
-    if (browser) await browser.close();
-  }
-});
-
 // --- API: PREMADE MAPS ---
 const PREMADE_DIR = path.join(__dirname, 'premade_maps');
 if (!fs.existsSync(PREMADE_DIR)) fs.mkdirSync(PREMADE_DIR);
@@ -173,104 +133,55 @@ app.post('/api/install-premade-map', (req, res) => {
     try {
         const zip = new AdmZip(zipPath);
         const zipEntries = zip.getEntries();
-        let newPlaces = [];
+        let config = {};
         let configFound = false;
+        let processed_data = [];
 
         // 1. FIND AND PARSE CONFIG (places.txt or similar)
         // We look for a file that contains "bbox" and "code"
         for (const entry of zipEntries) {
-            if (!entry.isDirectory && (entry.entryName.endsWith('.txt') || entry.entryName.endsWith('.js'))) {
-                const content = entry.getData().toString('utf8');
-                if (content.includes('"code":') && content.includes('"bbox":')) {
-                    console.log(`> Found config data in: ${entry.entryName}`);
-                    try {
-                        // Clean up the content to make it a valid JSON array
-                        // Remove "export default..." etc if present, wrap in []
-                        let cleanContent = content.trim();
-                        // Remove trailing commas causing JSON parse errors? 
-                        // We use 'new Function' to be permissive like a JS file
-                        // If it's just a list of objects {..}, {..}, we wrap in []
-                        if (cleanContent.startsWith('{') && !cleanContent.startsWith('[')) {
-                            cleanContent = `[${cleanContent}]`;
-                        }
-                        // Remove export default config if present to extract just the array
-                        // This is a bit hacky but covers most cases
-                        
-                        // Safety: Just try to evaluate it as an array of objects
-                        const extractedPlaces = new Function(`return ${cleanContent}`)();
-                        if (Array.isArray(extractedPlaces)) {
-                            newPlaces = extractedPlaces;
-                            configFound = true;
-                            break;
-                        }
-                    } catch (e) {
-                        console.log("> Failed to parse config file, trying next...", e.message);
-                    }
-                }
+            if(entry.entryName.toLowerCase().startsWith('city_config.json')) {
+                config = JSON.parse(entry.getData().toString('utf-8'));
+                configFound = true;
+                break;
             }
         }
 
         if (!configFound) {
-            return res.status(400).json({ error: "Could not find a valid places config (places.txt) inside the zip." });
+            return res.status(400).json({ error: "Could not find a valid places config (city_config.json) inside the zip." });
         }
 
         // 2. MERGE CONFIG
-        let currentMapConfig = { "tile-zoom-level": 16, "protomaps-bucket": "", "places": [] };
+        let currentMapConfig = { "tile-zoom-level": 16, "places": [] };
         if (fs.existsSync(mapConfigPath)) {
             const existingContent = fs.readFileSync(mapConfigPath, 'utf-8');
             const cleanJs = existingContent.replace(/export default/g, 'return');
             try { currentMapConfig = new Function(cleanJs)(); } catch(e) {}
         }
+        currentMapConfig.places.push(config);
 
-        let addedCount = 0;
-        newPlaces.forEach(newP => {
-            // Check if exists by code
-            const exists = currentMapConfig.places.find(p => p.code === newP.code);
-            if (!exists) {
-                currentMapConfig.places.push(newP);
-                addedCount++;
-            } else {
-                console.log(`> Skipping ${newP.name} (${newP.code}) - already exists.`);
-            }
-        });
+        fs.mkdirSync(path.join(mapPatcherDir, "processed_data", config.code), { recursive: true });
 
-        if (addedCount > 0) {
-            const newFileContent = `const config = ${JSON.stringify(currentMapConfig, null, 4)};\n\nexport default config;`;
-            fs.writeFileSync(mapConfigPath, newFileContent, 'utf-8');
-            console.log(`> Added ${addedCount} new cities to config.`);
-        } else {
-            console.log("> No new cities added (all duplicates).");
-        }
+        let wroteTiles = false;
 
-        // 3. EXTRACT FILES (Only map_tiles and processed_data)
-        console.log("> Extracting data files...");
         zipEntries.forEach(entry => {
-            const lowerName = entry.entryName.toLowerCase();
-            
-            // Extract processed_data
-            if (lowerName.includes('processed_data/') && !entry.isDirectory) {
-                // We need to find where "processed_data" starts in the path and strip the prefix
-                const parts = entry.entryName.split('/');
-                const procIndex = parts.findIndex(p => p.toLowerCase() === 'processed_data');
-                if (procIndex !== -1) {
-                    const relativePath = parts.slice(procIndex + 1).join('/'); // Path after processed_data/
-                    const dest = path.join(mapPatcherDir, 'processed_data', relativePath);
-                    const destDir = path.dirname(dest);
-                    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-                    fs.writeFileSync(dest, entry.getData());
-                }
-            }
-
-            // Extract map_tiles (.pmtiles only, ignore exe)
-            if (lowerName.includes('map_tiles/') && lowerName.endsWith('.pmtiles') && !entry.isDirectory) {
-                const fileName = path.basename(entry.entryName);
-                const dest = path.join(mapPatcherDir, 'map_tiles', fileName);
+            if(entry.entryName.startsWith('processed_data/') && !entry.isDirectory) {
+                const dest = path.join(mapPatcherDir, 'processed_data', config.code, entry.entryName.replace('processed_data/', ''));
                 fs.writeFileSync(dest, entry.getData());
+            }
+            else if(entry.entryName.endsWith('.pmtiles') && !entry.isDirectory) {
+                const dest = path.join(mapPatcherDir, 'map_tiles', entry.entryName);
+                fs.writeFileSync(dest, entry.getData());
+                wroteTiles = true;
             }
         });
 
         console.log("> Extraction complete.");
-        res.json({ success: true, message: `Installed ${addedCount} maps from ${filename}` });
+        let resp = {success: true, message: `Installed ${config.code} from ${filename}.`};
+        if(!wroteTiles) {
+            resp.warning = "No .pmtiles files were found in the zip. Please run download_tiles.js to generate them.";
+        }
+        res.json(resp);
 
     } catch (e) {
         console.error(e);

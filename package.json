@@ -11,8 +11,6 @@
     "express": "^5.1.0",
     "import-sync": "^2.2.3",
     "open": "^11.0.0",
-    "socket.io": "^4.8.1",
-    "node-fetch": "^3.3.2",
-	"puppeteer": "^24.31.0"
+    "socket.io": "^4.8.1"
   }
 }

@@ -326,13 +326,13 @@ function createMapPatcherStep(pkgName) {
                 <h2>Map Patcher Configuration</h2>
                 
                 <div class="map-mode-tabs">
-                    <div class="mode-tab active" data-mode="easy">Easy Install</div>
-                    <div class="mode-tab" data-mode="advanced">Advanced Settings</div>
+                    <div class="mode-tab active" data-mode="easy">Import Maps</div>
+                    <div class="mode-tab" data-mode="advanced">Manual Configuration</div>
                 </div>
 
                 <!-- EASY MODE -->
                 <div id="mode-easy" class="mode-content active">
-                    <h3>Easy Installation</h3>
+                    <h3>Import Maps</h3>
                     <p>Select a map pack from the <code>premade_maps</code> folder.</p>
                     <div class="field-group" style="background:#333; padding:15px; border-radius:5px;">
                         <label>Available Map Packs</label>
@@ -358,15 +358,7 @@ function createMapPatcherStep(pkgName) {
 							<li>Copy and paste those numbers into the <strong>BBox</strong> field below.</li>
 						</ol>
 					</div>
-                    <h3>Advanced Configuration</h3>
-                    <div class="field-group">
-                        <label>Protomaps Bucket URL</label>
-                        <div style="display:flex; gap:10px;">
-                            <input type="text" id="inp-bucket" value="${configObj['protomaps-bucket'] || ''}">
-                            <button class="btn-secondary" id="btn-fetch-proto" type="button">Get Latest</button>
-                        </div>
-                    </div>
-                    
+                    <h3>Manual Configuration</h3>
                     <div id="places-container"></div>
                     <button id="btn-add-place" class="btn-secondary" style="margin-top:10px;">+ Add Place</button>
                     
@@ -417,9 +409,6 @@ function createMapPatcherStep(pkgName) {
 
             // Advanced Actions
             loadAdvancedPlaces(pkgName);
-            document.getElementById('btn-fetch-proto').addEventListener('click', async () => {
-                 try { const res = await fetch('/api/latest-protomaps'); const d = await res.json(); if(d.url) document.getElementById('inp-bucket').value = d.url; } catch(e) { alert("Error fetching URL"); }
-            });
             document.getElementById('btn-add-place').addEventListener('click', () => addPlaceCard());
 
             const showTerm = () => terminalWrapper.style.display = 'block';
@@ -431,9 +420,8 @@ function createMapPatcherStep(pkgName) {
         validate: () => true,
         save: async () => {
             const filename = document.getElementById('raw-filename').value;
-            const bucket = document.getElementById('inp-bucket').value;
             const places = scrapePlaces();
-            const content = `const config = {\n    "tile-zoom-level": 16, \n    "protomaps-bucket": "${bucket}", \n    "places": ${JSON.stringify(places, null, 4)},\n};\nexport default config;`;
+            const content = `const config = {\n    "tile-zoom-level": 16, \n    "places": ${JSON.stringify(places, null, 4)},\n};\nexport default config;`;
             await fetch(`/api/package-config/${pkgName}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ filename, content }) });
         }
     };
