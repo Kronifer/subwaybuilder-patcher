@@ -1,10 +1,12 @@
 {
   "name": "subwaybuilder-patcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Patches Subway Builder",
+  "private": true,
   "type": "module",
   "dependencies": {
     "@electron/asar": "^4.0.1",
+    "adm-zip": "^0.5.16",
     "big-json": "^3.2.0",
     "express": "^5.1.0",
     "import-sync": "^2.2.3",

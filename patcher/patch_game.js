@@ -1,61 +1,77 @@
 import fs from 'fs';
 import config from '../config.js';
 import { execSync } from 'child_process';
+import path from 'path';
 
 console.log("Subway Builder Patcher - Written by Kronifer");
 
-if (fs.existsSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root`)) {
-    fs.rmSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root`, { recursive: true, force: true });
+// FIX: Helper to ensure paths are safe for command line (wrap in quotes)
+const q = (str) => `"${str}"`;
+// Helpers for cleanup
+const WORK_DIR = path.join(import.meta.dirname, '..', 'patching_working_directory');
+const SQUASHFS_DIR = path.join(WORK_DIR, 'squashfs-root');
+const EXTRACTED_DIR = path.join(WORK_DIR, 'extracted-asar');
+const APP_IMAGE = path.join(WORK_DIR, 'SB.AppImage');
+
+// CLEANUP
+if (fs.existsSync(SQUASHFS_DIR)) {
+    fs.rmSync(SQUASHFS_DIR, { recursive: true, force: true });
 }
-if (fs.existsSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar`)) {
-    fs.rmSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar`, { recursive: true, force: true });
+if (fs.existsSync(EXTRACTED_DIR)) {
+    fs.rmSync(EXTRACTED_DIR, { recursive: true, force: true });
 }
 
 if (config.platform === "windows") {
     console.log("Platform: Windows");
     console.log("Copying game directory");
-    fs.cpSync(config.subwaybuilderLocation, `${import.meta.dirname}/../patching_working_directory/squashfs-root`, { recursive: true });
+    fs.cpSync(config.subwaybuilderLocation, SQUASHFS_DIR, { recursive: true });
 }
 else if (config.platform === "linux") {
     console.log("Platform: Linux");
     console.log('Copying AppImage to working directory');
-    fs.cpSync(config.subwaybuilderLocation, `${import.meta.dirname}/../patching_working_directory/SB.AppImage`);
+    fs.cpSync(config.subwaybuilderLocation, APP_IMAGE);
     console.log('Extracting AppImage contents')
-    fs.chmodSync(`${import.meta.dirname}/../patching_working_directory/SB.AppImage`, '777');
-    execSync(`${import.meta.dirname}/../patching_working_directory/SB.AppImage --appimage-extract`, { cwd: `${import.meta.dirname}/../patching_working_directory` });
+    fs.chmodSync(APP_IMAGE, '777');
+    // FIX: Use quotes for paths in execSync
+    execSync(`${q(APP_IMAGE)} --appimage-extract`, { cwd: WORK_DIR });
 }
 else if (config.platform === "macos") {
     console.log("Platform: MacOS");
     console.log("Copying app contents");
-    fs.cpSync(`${config.subwaybuilderLocation}/Contents`, `${import.meta.dirname}/../patching_working_directory/squashfs-root`, { recursive: true });
-    fs.renameSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/Resources`, `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources`);
+    fs.cpSync(`${config.subwaybuilderLocation}/Contents`, SQUASHFS_DIR, { recursive: true });
+    fs.renameSync(path.join(SQUASHFS_DIR, 'Resources'), path.join(SQUASHFS_DIR, 'resources'));
 }
 
 console.log("Extracting app.asar");
-execSync(`npx @electron/asar extract ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar ${import.meta.dirname}/../patching_working_directory/extracted-asar`);
+const asarPath = path.join(SQUASHFS_DIR, 'resources', 'app.asar');
+// FIX: Added quotes around paths to handle spaces
+execSync(`npx @electron/asar extract ${q(asarPath)} ${q(EXTRACTED_DIR)}`);
 
-console.log('Locating index.js')
-const filesInPublicDirectory = fs.readdirSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public`);
-const shouldBeIndexJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('index-') && fileName.endsWith('.js'));
-console.log('Locating GameMain.js')
-const shouldBeGameMainJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('GameMain-') && fileName.endsWith('.js'));
-console.log('Locating interlinedRoutes.js')
-const shouldBeInterlinedRoutesJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('interlinedRoutes') && fileName.endsWith('.js'));
-console.log('Locating popCommuteWorker.js')
-const shouldBePopCommuteWorkerJS = filesInPublicDirectory.filter((fileName) => fileName.startsWith('popCommuteWorker') && fileName.endsWith('.js'));
-if (shouldBeIndexJS.length == 0 || shouldBeGameMainJS.length == 0 || shouldBeInterlinedRoutesJS.length == 0 || shouldBePopCommuteWorkerJS.length == 0) {
-    console.error("Could not locate index.js, GameMain.js, interlinedRoutes.js, and/or popCommuteWorker.js in the public directory!");
+console.log('Locating files in public directory');
+const publicDir = path.join(EXTRACTED_DIR, 'dist', 'renderer', 'public');
+const filesInPublicDirectory = fs.readdirSync(publicDir);
 
+const findFile = (prefix) => filesInPublicDirectory.find(f => f.startsWith(prefix) && f.endsWith('.js'));
+
+const indexJS = findFile('index-');
+const gameMainJS = findFile('GameMain-');
+const interlinedRoutesJS = findFile('interlinedRoutes');
+const popCommuteWorkerJS = findFile('popCommuteWorker');
+
+if (!indexJS || !gameMainJS || !interlinedRoutesJS || !popCommuteWorkerJS) {
+    console.error("CRITICAL ERROR: Could not locate index.js, GameMain.js, interlinedRoutes.js and/or popCommuteworker.js in public directory!");
+    process.exit(1);
 }
 
 let fileContents = {};
-fileContents.INDEX = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, 'utf-8');
-fileContents.GAMEMAIN = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, 'utf-8');
-fileContents.INTERLINEDROUTES = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeInterlinedRoutesJS[0]}`, 'utf-8');
-fileContents.POPCOMMUTEWORKER = fs.readFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBePopCommuteWorkerJS[0]}`, 'utf-8');
+fileContents.INDEX = fs.readFileSync(path.join(publicDir, indexJS), 'utf-8');
+fileContents.GAMEMAIN = fs.readFileSync(path.join(publicDir, gameMainJS), 'utf-8');
+fileContents.INTERLINEDROUTES = fs.readFileSync(path.join(publicDir, interlinedRoutesJS), 'utf-8');
+fileContents.POPCOMMUTEWORKER = fs.readFileSync(path.join(publicDir, popCommuteWorkerJS), 'utf-8');
+
 fileContents.PATHS = {};
-fileContents.PATHS.RESOURCESDIR = `${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/`;
-fileContents.PATHS.RENDERERDIR = `${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/`;
+fileContents.PATHS.RESOURCESDIR = path.join(SQUASHFS_DIR, 'resources') + path.sep;
+fileContents.PATHS.RENDERERDIR = path.join(EXTRACTED_DIR, 'dist', 'renderer') + path.sep;
 
 let promises = [];
 for(const packageName of config.packagesToRun) {
@@ -64,50 +80,50 @@ for(const packageName of config.packagesToRun) {
     promises.push(mod);
 }
 
+// FIX: Made it sequential so we don't get race conditions
 Promise.all(promises).then((mods) => {
-    let promises2 = [];
+    let sequence = Promise.resolve();
+    
     mods.forEach((mod) => {
-        let newPromise = new Promise((resolve) => {
-            Promise.all(promises2.slice()).then(() => {
-                let intermediary = mod.patcherExec(fileContents);
-                if(intermediary instanceof Promise) {
-                    intermediary.then((modifiedFileContents) => {
-                        fileContents = modifiedFileContents;
-                        resolve();
-                    });
-                } else {
-                    fileContents = intermediary;
-                    resolve();
-                }
-            });
+        sequence = sequence.then(() => {
+            let result = mod.patcherExec(fileContents);
+            return result instanceof Promise ? result.then(res => fileContents = res) : (fileContents = result);
         });
-        promises2.push(newPromise);
     });
-    Promise.all(promises2).then((_) => {
+
+    sequence.then(() => {
         console.log("Writing modified files back to disk");
-        fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeIndexJS[0]}`, fileContents.INDEX, 'utf-8');
-        fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeGameMainJS[0]}`, fileContents.GAMEMAIN, 'utf-8');
-        fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBeInterlinedRoutesJS[0]}`, fileContents.INTERLINEDROUTES, 'utf-8');
-        fs.writeFileSync(`${import.meta.dirname}/../patching_working_directory/extracted-asar/dist/renderer/public/${shouldBePopCommuteWorkerJS[0]}`, fileContents.POPCOMMUTEWORKER, 'utf-8');
+        fs.writeFileSync(path.join(publicDir, indexJS), fileContents.INDEX, 'utf-8');
+        fs.writeFileSync(path.join(publicDir, gameMainJS), fileContents.GAMEMAIN, 'utf-8');
+        fs.writeFileSync(path.join(publicDir, interlinedRoutesJS), fileContents.INTERLINEDROUTES, 'utf-8');
+        fs.writeFileSync(path.join(publicDir, popCommuteWorkerJS), fileContents.POPCOMMUTEWORKER, 'utf-8');
+
         console.log("Repacking app.asar");
-        execSync(`npx @electron/asar pack ${import.meta.dirname}/../patching_working_directory/extracted-asar ${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar --unpack-dir=node_modules/{sharp,@rollup,@esbuild,@img,register-scheme}`);
+        // FIX: Added quotes around paths here too
+        execSync(`npx @electron/asar pack ${q(EXTRACTED_DIR)} ${q(asarPath)} --unpack-dir=node_modules/{sharp,@rollup,@esbuild,@img,register-scheme}`);
+
         if (config.platform === "windows") {
-            if (fs.existsSync(`${import.meta.dirname}/../SubwayBuilderPatched`)) {
-                fs.rmSync(`${import.meta.dirname}/../SubwayBuilderPatched`, { recursive: true, force: true });
+            const dest = path.join(import.meta.dirname, '..', 'SubwayBuilderPatched');
+            if (fs.existsSync(dest)) {
+                fs.rmSync(dest, { recursive: true, force: true });
             }
             console.log("Writing patched game to disk");
-            fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root`, `${import.meta.dirname}/../SubwayBuilderPatched`, { recursive: true });
-        } else if (config.platform === "linux") {
-            if (fs.existsSync(`${import.meta.dirname}/../SubwayBuilderPatched.AppImage`)) {
-                fs.rmSync(`${import.meta.dirname}/../SubwayBuilderPatched.AppImage`, { force: true });
+            fs.cpSync(SQUASHFS_DIR, dest, { recursive: true });
+        } 
+        else if (config.platform === "linux") {
+            const destAppImage = path.join(import.meta.dirname, '..', 'SubwayBuilderPatched.AppImage');
+            if (fs.existsSync(destAppImage)) {
+                fs.rmSync(destAppImage, { force: true });
             }
             console.log("Repacking AppImage");
-            execSync(`appimagetool ${import.meta.dirname}/../patching_working_directory/squashfs-root ${import.meta.dirname}/../SubwayBuilderPatched.AppImage`);
-        } else if (config.platform === "macos") {
+            execSync(`appimagetool ${q(SQUASHFS_DIR)} ${q(destAppImage)}`);
+        } 
+        else if (config.platform === "macos") {
             const originalAppPath = '/Applications/Subway Builder.app';
-            const patchedAppPath = `${import.meta.dirname}/../SubwayBuilderPatched.app`;
-            if (fs.existsSync(`${import.meta.dirname}/../SubwayBuilderPatched.app`)) {
-                fs.rmSync(`${import.meta.dirname}/../SubwayBuilderPatched.app`, { recursive: true, force: true });
+            const patchedAppPath = path.join(import.meta.dirname, '..', 'SubwayBuilderPatched.app');
+            
+            if (fs.existsSync(patchedAppPath)) {
+                fs.rmSync(patchedAppPath, { recursive: true, force: true });
             }
             console.log(`Copying 'Subway Builder.app' from /Applications using ditto...`);
             try {
@@ -117,12 +133,20 @@ Promise.all(promises).then((mods) => {
                 console.error(error);
                 process.exit(1);
             }
+
             console.log("Writing patched app to disk");
-            fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar`, `${import.meta.dirname}/../SubwayBuilderPatched.app/Contents/Resources/app.asar`, { recursive: true });
-            fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/app.asar.unpacked`, `${import.meta.dirname}/../SubwayBuilderPatched.app/Contents/Resources/app.asar.unpacked`, { recursive: true });
-            fs.copyFileSync(`${patchedAppPath}/Contents/Resources/app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.17.3.dylib`, `${patchedAppPath}/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvips-cpp.8.17.3.dylib`);
-            fs.cpSync(`${import.meta.dirname}/../patching_working_directory/squashfs-root/resources/data`, `${patchedAppPath}/Contents/Resources/data`, { recursive: true });
-            console.log('Clearing extended attributes');
+            const rsrc = path.join(patchedAppPath, 'Contents', 'Resources');
+            fs.cpSync(path.join(SQUASHFS_DIR, 'resources', 'app.asar'), path.join(rsrc, 'app.asar'));
+            fs.cpSync(path.join(SQUASHFS_DIR, 'resources', 'app.asar.unpacked'), path.join(rsrc, 'app.asar.unpacked'), { recursive: true });
+            
+            // FIX: libvips
+            const libVipsSrc = path.join(rsrc, 'app.asar.unpacked', 'node_modules', '@img', 'sharp-libvips-darwin-arm64', 'lib', 'libvips-cpp.8.17.3.dylib');
+            const libVipsDest = path.join(patchedAppPath, 'Contents', 'Frameworks', 'Electron Framework.framework', 'Versions', 'A', 'Libraries', 'libvips-cpp.8.17.3.dylib');
+            if(fs.existsSync(libVipsSrc)) fs.copyFileSync(libVipsSrc, libVipsDest);
+
+            fs.cpSync(path.join(SQUASHFS_DIR, 'resources', 'data'), path.join(rsrc, 'data'), { recursive: true });
+
+            console.log('Signing app...');
             try {
                 execSync(`dot_clean "${patchedAppPath}"`);
                 execSync(`xattr -cr "${patchedAppPath}"`);
@@ -146,10 +170,10 @@ Promise.all(promises).then((mods) => {
         }
 
         console.log("Patching complete!");
-        console.log("Cleaning up working directory");
-        fs.rmSync("../patching_working_directory/squashfs-root", { recursive: true, force: true });
-        fs.rmSync("../patching_working_directory/extracted-asar", { recursive: true, force: true });
+        console.log("Cleaning up...");
+        fs.rmSync(SQUASHFS_DIR, { recursive: true, force: true });
+        fs.rmSync(EXTRACTED_DIR, { recursive: true, force: true });
         console.log("Done!");
-        process.exit(1);
+        process.exit(0); // FIX: exit because successful instead of error
     });
 });

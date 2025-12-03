@@ -10,67 +10,45 @@
 <body>
 
     <div class="container">
+        <!-- Header with Progress -->
         <header>
             <h1>Subway Builder Patcher</h1>
-            <p>Graphical frontend for the patcher + mapPatcher(Kronifer, addTrains(mhmoeller) and settingsTweaks(slurry)</p>
-            <p>Patcher by Kronifer and GUI by mhmoeller</p>
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                </div>
+                <div id="step-indicator" class="step-indicator">Step 1 of 4</div>
+            </div>
         </header>
 
         <main>
-            <section id="root-config-section" class="panel config-panel" style="max-width: 600px; margin: 0 auto; height: auto;">
-                <h2>Patcher Configuration</h2>
-                
-                <div class="field-group">
-                    <label for="platform-select">Platform</label>
-                    <select id="platform-select">
-                        <option value="windows">Windows</option>
-                        <option value="linux">Linux</option>
-                        <option value="macos">macOS</option>
-                    </select>
+            <!-- Wizard Content Area -->
+            <div id="wizard-content" class="wizard-content">
+                <!-- Content injected dynamically by client.js -->
+                <p>Loading wizard...</p>
+            </div>
+
+            <!-- Terminal (Always visible but collapsible/smaller in wizard mode until the end) -->
+            <div id="terminal-wrapper" class="terminal-wrapper" style="display:none;">
+                <div class="terminal-header">Log Output</div>
+                <div id="terminal" class="terminal-window">
+                    <pre id="log-content"><span class="cursor">_</span></pre>
                 </div>
-
-                <div class="field-group">
-                    <label for="sb-path">Subway Builder installation path</label>
-                    <input type="text" id="sb-path" placeholder="Paste path here (e.g. C:\Users\name\AppData...)" />
-                </div>
-
-                <button id="save-root-config" class="btn-primary">Save patcher config</button>
-            </section>
-
-            <div id="main-options-wrapper" style="display: none; height: 100%; width: 100%; gap: 20px;">
-                
-                <section class="panel config-panel">
-                    <h2>Packages</h2>
-                    <div id="package-list" class="package-list">
-                        <p>Loading...</p>
-                    </div>
-
-                    <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px; flex: 1; display: flex; flex-direction: column; min-height: 0;">
-                        
-                        <div id="package-config-panel" class="config-panel-content active">
-                            <div id="config-form">
-                                <p style="color:#888; font-style:italic; text-align:center; margin-top:20px;">
-                                    Select a package from the list above and click the <strong>"Config"</strong> button to edit its settings here.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="panel terminal-panel">
-                    <h2>Output Log</h2>
-                    <div id="terminal" class="terminal-window">
-                        <pre id="log-content"><span class="cursor">_</span></pre>
-                    </div>
-                    <div class="bottom-actions">
-                        <button id="start-btn" class="btn-primary">START PATCHING</button>
-                    </div>
-                </section>
-
             </div>
         </main>
+
+        <!-- Footer with Navigation -->
+        <footer>
+            <div class="footer-buttons">
+                <button id="btn-back" class="btn-secondary" disabled>Back</button>
+                <div id="status-message" class="status-message"></div>
+                <button id="btn-next" class="btn-primary">Next</button>
+            </div>
+        </footer>
     </div>
 
+    <!-- Templates for static parts (optional, mostly done in JS for dynamic wizardry) -->
+    
     <script src="client.js"></script>
 </body>
 </html>
