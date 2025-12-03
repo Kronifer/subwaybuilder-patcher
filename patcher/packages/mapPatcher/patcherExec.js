@@ -11,7 +11,7 @@ const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
 let citiesFolder = "";
 
 if(config2.platform === "windows") {
-  citiesFolder = `%appdata%\\metro-maker4\\cities`;
+  citiesFolder = `${process.env.USERPROFILE}\\AppData\\Roaming\\metro-maker4\\cities`;
 } else if(config2.platform === "macos") {
   citiesFolder = `${process.env.HOME}/Library/Application Support/subway builder/cities/`;
 } else {
