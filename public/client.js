@@ -791,7 +791,18 @@ function addPlaceCard(place = {}) {
             <div><label>Name</label><input type="text" class="inp-name" value="${place.name||''}"></div>
         </div>
         <div style="margin-top:5px;"><label>Description</label><input type="text" class="inp-desc" value="${place.description||''}"></div>
-        <div style="margin-top:5px;"><label>BBox</label><input type="text" class="inp-bbox" value="${place.bbox ? place.bbox.join(',') : ''}" placeholder="-79.4, 43.6, ..."></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:5px;">
+            <div style="margin-top:5px;"><label>Population</label><input type="number" class="inp-population" value="${place.population || 0}"></div>
+            <div style="margin-top:5px;"><label>BBox</label><input type="text" class="inp-bbox" value="${place.bbox ? place.bbox.join(',') : ''}" placeholder="-79.4, 43.6, ..."></div>
+        </div>
+        <div style="margin-top:5px;"><label>Thumbnail BBox (optional)</label><input type="text" class="inp-thumb-bbox" value="${place.thumbnailBbox ? place.thumbnailBbox.join(',') : ''}" placeholder="-79.4, 43.6, ..."></div>
+        <label>Initial View State (optional)</label>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:5px;">
+            <div><label>Latitude</label><input type="number" class="inp-view-lat" value="${place.initialViewState ? place.initialViewState.latitude : ''}" step="0.0001"></div>
+            <div><label>Longitude</label><input type="number" class="inp-view-lon" value="${place.initialViewState ? place.initialViewState.longitude : ''}" step="0.0001"></div>
+            <div><label>Zoom</label><input type="number" class="inp-view-zoom" value="${place.initialViewState ? place.initialViewState.zoom : ''}" step="0.1"></div>
+            <div><label>Bearing</label><input type="number" class="inp-view-bearing" value="${place.initialViewState ? place.initialViewState.bearing : ''}" step="1"></div>
+        </div>
         <button class="btn-secondary btn-remove-place" style="background:#c0392b; margin-top:10px; padding:5px 10px; font-size:0.8rem;">Remove Place</button>
     `;
     
@@ -811,9 +822,22 @@ function scrapePlaces() {
         const name = card.querySelector('.inp-name').value;
         const desc = card.querySelector('.inp-desc').value;
         const bboxStr = card.querySelector('.inp-bbox').value;
+        const population = parseInt(card.querySelector('.inp-population').value) || 0;
+        const thumbBboxStr = card.querySelector('.inp-thumb-bbox').value;
+        const initialViewState = {
+            latitude: typeof(parseFloat(card.querySelector('.inp-view-lat').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-lat').value) : undefined,
+            longitude: typeof(parseFloat(card.querySelector('.inp-view-lon').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-lon').value) : undefined,
+            zoom: typeof(parseFloat(card.querySelector('.inp-view-zoom').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-zoom').value) : undefined,
+            bearing: typeof(parseFloat(card.querySelector('.inp-view-bearing').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-bearing').value) : undefined,
+        }
         let bbox = [];
         try { bbox = bboxStr.split(',').map(n => parseFloat(n.trim())); } catch(e){}
-        if(code) places.push({ code, name, description: desc, bbox });
+        let thumbnailBbox = [];
+        try { thumbnailBbox = thumbBboxStr.split(',').map(n => parseFloat(n.trim())); } catch(e){}
+        let finalCity = { code, name, description: desc, bbox, population };
+        if(thumbnailBbox.length === 4) finalCity.thumbnailBbox = thumbnailBbox;
+        if(initialViewState.latitude !== undefined && initialViewState.longitude !== undefined && initialViewState.zoom !== undefined && initialViewState.bearing !== undefined) finalCity.initialViewState = initialViewState;
+        if(code) places.push(finalCity);
     });
     return places;
 }
