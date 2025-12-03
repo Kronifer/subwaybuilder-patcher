@@ -159,6 +159,8 @@ app.post('/api/install-premade-map', (req, res) => {
             try { currentMapConfig = new Function(cleanJs)(); } catch(e) {}
         }
         currentMapConfig.places.push(config);
+		fs.writeFileSync(mapConfigPath, `const config = ${JSON.stringify(currentMapConfig, null, 2)};\n\nexport default config;`, 'utf-8');
+        console.log("> Updated mapPatcher config.js");
 
         fs.mkdirSync(path.join(mapPatcherDir, "processed_data", config.code), { recursive: true });
 
