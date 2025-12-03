@@ -264,7 +264,7 @@ export async function patcherExec(fileContents) {
           listOfPlaceFiles.forEach(fileName => {
             execSync(`gzip -f ${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/${fileName}`);
           });
-          console.log(`Finished copying amd compressing data for ${place.code} (${++counter} of ${config.places.length})`);
+          console.log(`Finished copying and compressing data for ${place.code} (${++counter} of ${config.places.length})`);
           resolve();
         });
       }));
