@@ -144,7 +144,7 @@ Promise.all(promises).then((mods) => {
             const libVipsDest = path.join(patchedAppPath, 'Contents', 'Frameworks', 'Electron Framework.framework', 'Versions', 'A', 'Libraries', 'libvips-cpp.8.17.3.dylib');
             if(fs.existsSync(libVipsSrc)) fs.copyFileSync(libVipsSrc, libVipsDest);
 
-            fs.cpSync(path.join(SQUASHFS_DIR, 'resources', 'data'), path.join(rsrc, 'data'), { recursive: true });
+            // fs.cpSync(path.join(SQUASHFS_DIR, 'resources', 'data'), path.join(rsrc, 'data'), { recursive: true }); Not necessary?
 
             console.log('Signing app...');
             try {

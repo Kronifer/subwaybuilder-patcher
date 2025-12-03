@@ -8,6 +8,16 @@ const stringReplaceAt = (string, startIndex, endIndex, replacement) => {
     return string.substring(0, startIndex) + replacement + string.substring(endIndex + 1);
 };
 
+let citiesFolder = "";
+
+if(config2.platform === "windows") {
+  citiesFolder = `%appdata%\\metro-maker4\\cities`;
+} else if(config2.platform === "macos") {
+  citiesFolder = `${process.env.HOME}/Library/Application Support/subway builder/cities/`;
+} else {
+  citiesFolder = `${process.env.HOME}/.config/subway builder/cities/`;
+}
+
 export async function patcherExec(fileContents) {
     let allFilesExist = true;
     config.places.forEach(place => {
@@ -252,17 +262,17 @@ export async function patcherExec(fileContents) {
     config.places.forEach(place => {
       promises.push(new Promise((resolve) => {
         generateThumbnail(place.code).then((svgString) => {
-          fs.rmSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`, { recursive: true, force: true });
-          fs.mkdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
-          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/buildings_index.json`);
-          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/demand_data.json`);
-          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/roads.geojson`);
-          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/runways_taxiways.geojson`);
-          if (fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`)) {fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`, `${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/ocean_depth_index.json`);}
+          fs.rmSync(`${citiesFolder}/data/${place.code}`, { recursive: true, force: true });
+          fs.mkdirSync(`${citiesFolder}/data/${place.code}`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${citiesFolder}/data/${place.code}/buildings_index.json`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${citiesFolder}/data/${place.code}/demand_data.json`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${citiesFolder}/data/${place.code}/roads.geojson`);
+          fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`, `${citiesFolder}/data/${place.code}/runways_taxiways.geojson`);
+          if (fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`)) {fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`, `${citiesFolder}/data/${place.code}/ocean_depth_index.json`);}
           fs.writeFileSync(`${fileContents.PATHS.RENDERERDIR}/city-maps/${place.code.toLowerCase()}.svg`, svgString);
-          const listOfPlaceFiles = fs.readdirSync(`${fileContents.PATHS.RESOURCESDIR}/data/${place.code}`);
+          const listOfPlaceFiles = fs.readdirSync(`${citiesFolder}/data/${place.code}`);
           listOfPlaceFiles.forEach(fileName => {
-            execSync(`gzip -f ${fileContents.PATHS.RESOURCESDIR}/data/${place.code}/${fileName}`);
+            execSync(`gzip -f ${citiesFolder}/data/${place.code}/${fileName}`);
           });
           console.log(`Finished copying and compressing data for ${place.code} (${++counter} of ${config.places.length})`);
           resolve();
