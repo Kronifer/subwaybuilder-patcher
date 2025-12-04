@@ -9,11 +9,6 @@ import { execSync } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- CONFIGURATION ---
-// PMTiles
-const PMTILES_VERSION = "1.28.2";
-const PMTILES_BASE_URL = `https://github.com/protomaps/go-pmtiles/releases/download/v${PMTILES_VERSION}/`;
-
 // Gzip (Windows only) - Using GnuWin32 from SourceForge
 const GZIP_URL = "https://downloads.sourceforge.net/project/gnuwin32/gzip/1.3.12-1/gzip-1.3.12-1-bin.zip";
 
@@ -57,33 +52,80 @@ async function downloadFileWithRedirects(url, destPath) {
     });
 }
 
-function getPmtilesUrl() {
+// --- HELPER: Get latest pmtiles version ---
+function getLatestPmtilesVersion() {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'api.github.com',
+            path: '/repos/protomaps/go-pmtiles/releases/latest',
+            method: 'GET',
+            headers: { 'User-Agent': 'Node.js Script' }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode === 200) {
+                    try {
+                        const json = JSON.parse(data);
+                        const version = json.tag_name.replace(/^v/, '');
+                        resolve(version);
+                    } catch (e) {
+                        reject(new Error("Couldn't parse JSON from GitHub"));
+                    }
+                } else {
+                    reject(new Error(`GitHub API failed with status: ${res.statusCode}`));
+                }
+            });
+        });
+
+        req.on('error', (e) => reject(e));
+        req.end();
+    });
+}
+
+// Dynamisk URL bygning baseret på system og version
+function getPmtilesUrl(version) {
     const platform = os.platform();
     const arch = os.arch();
     console.log(`Detected System: ${platform} (${arch})`);
 
     let filename = "";
     if (platform === 'win32') {
-        if (arch === 'x64') filename = `go-pmtiles_${PMTILES_VERSION}_Windows_x86_64.zip`;
-        else if (arch === 'arm64') filename = `go-pmtiles_${PMTILES_VERSION}_Windows_arm64.zip`;
+        if (arch === 'x64') filename = `go-pmtiles_${version}_Windows_x86_64.zip`;
+        else if (arch === 'arm64') filename = `go-pmtiles_${version}_Windows_arm64.zip`;
     } else if (platform === 'darwin') {
-        if (arch === 'x64') filename = `go-pmtiles-${PMTILES_VERSION}_Darwin_x86_64.zip`;
-        else if (arch === 'arm64') filename = `go-pmtiles-${PMTILES_VERSION}_Darwin_arm64.zip`;
+        if (arch === 'x64') filename = `go-pmtiles-${version}_Darwin_x86_64.zip`;
+        else if (arch === 'arm64') filename = `go-pmtiles-${version}_Darwin_arm64.zip`;
     } else if (platform === 'linux') {
-        if (arch === 'x64') filename = `go-pmtiles_${PMTILES_VERSION}_Linux_x86_64.tar.gz`;
-        else if (arch === 'arm64') filename = `go-pmtiles_${PMTILES_VERSION}_Linux_arm64.tar.gz`;
+        if (arch === 'x64') filename = `go-pmtiles_${version}_Linux_x86_64.tar.gz`;
+        else if (arch === 'arm64') filename = `go-pmtiles_${version}_Linux_arm64.tar.gz`;
     }
 
     if (!filename) {
         console.error("ERROR: Unsupported platform/arch for pmtiles.");
         process.exit(1);
     }
-    return { url: PMTILES_BASE_URL + filename, filename: filename, isZip: filename.endsWith('.zip') };
+
+    const baseUrl = `https://github.com/protomaps/go-pmtiles/releases/download/v${version}/`;
+    return { url: baseUrl + filename, filename: filename, isZip: filename.endsWith('.zip') };
 }
 
 // --- TASK 1: DOWNLOAD PMTILES TOOL ---
 async function installPmtiles() {
-    const targetInfo = getPmtilesUrl();
+    console.log("Checking for latest pmtiles version...");
+
+    let version;
+    try {
+        version = await getLatestPmtilesVersion();
+        console.log(`Latest version is: ${version}`);
+    } catch (e) {
+        console.error("Failed to check latest version:", e.message);
+        process.exit(1);
+    }
+
+    const targetInfo = getPmtilesUrl(version);
     const downloadPath = path.join(TILES_DIR, targetInfo.filename);
     const finalExeName = os.platform() === 'win32' ? 'pmtiles.exe' : 'pmtiles';
     const finalExePath = path.join(TILES_DIR, finalExeName);
@@ -114,7 +156,7 @@ async function installPmtiles() {
     if (fs.existsSync(path.join(TILES_DIR, 'README.md'))) fs.unlinkSync(path.join(TILES_DIR, 'README.md'));
 
     if (os.platform() !== 'win32') fs.chmodSync(finalExePath, '755');
-    console.log(`[SUCCESS] Installed ${finalExeName}`);
+    console.log(`[SUCCESS] Installed ${finalExeName} (v${version})`);
 }
 
 // --- TASK 2: DOWNLOAD GZIP (WINDOWS ONLY) ---
