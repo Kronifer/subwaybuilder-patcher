@@ -72,10 +72,10 @@ function getLatestPmtilesVersion() {
                         const version = json.tag_name.replace(/^v/, '');
                         resolve(version);
                     } catch (e) {
-                        reject(new Error("Kunne ikke parse JSON fra GitHub"));
+                        reject(new Error("Couldn't parse JSON from GitHub"));
                     }
                 } else {
-                    reject(new Error(`GitHub API fejlede med status: ${res.statusCode}`));
+                    reject(new Error(`GitHub API failed with status: ${res.statusCode}`));
                 }
             });
         });
