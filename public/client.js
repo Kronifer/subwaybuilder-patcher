@@ -825,20 +825,31 @@ function scrapePlaces() {
         const population = parseInt(card.querySelector('.inp-population').value) || 0;
         const thumbBboxStr = card.querySelector('.inp-thumb-bbox').value;
         const initialViewState = {
-            latitude: typeof(parseFloat(card.querySelector('.inp-view-lat').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-lat').value) : undefined,
-            longitude: typeof(parseFloat(card.querySelector('.inp-view-lon').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-lon').value) : undefined,
-            zoom: typeof(parseFloat(card.querySelector('.inp-view-zoom').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-zoom').value) : undefined,
-            bearing: typeof(parseFloat(card.querySelector('.inp-view-bearing').value)) == 'number' ? parseFloat(card.querySelector('.inp-view-bearing').value) : undefined,
+            latitude: parseFloat(card.querySelector('.inp-view-lat').value),
+            longitude: parseFloat(card.querySelector('.inp-view-lon').value),
+            zoom: parseFloat(card.querySelector('.inp-view-zoom').value),
+            bearing: parseFloat(card.querySelector('.inp-view-bearing').value)
         }
         let bbox = [];
         try { bbox = bboxStr.split(',').map(n => parseFloat(n.trim())); } catch(e){}
         let thumbnailBbox = [];
         try { thumbnailBbox = thumbBboxStr.split(',').map(n => parseFloat(n.trim())); } catch(e){}
         let finalCity = { code, name, description: desc, bbox, population };
+        console.log(initialViewState);
         if(thumbnailBbox.length === 4) finalCity.thumbnailBbox = thumbnailBbox;
-        if(initialViewState.latitude !== undefined && initialViewState.longitude !== undefined && initialViewState.zoom !== undefined && initialViewState.bearing !== undefined) finalCity.initialViewState = initialViewState;
+        let ivsValid = true;
+        for(const key in initialViewState) {
+            if(isNaN(initialViewState[key])) ivsValid = false;
+        }
+        if(ivsValid) finalCity.initialViewState = initialViewState;
+        if(!ivsValid) {
+            if(initialViewState.latitude && initialViewState.longitude) {
+                finalCity.initialViewState = { latitude: initialViewState.latitude, longitude: initialViewState.longitude , zoom: 12, bearing: 0 };
+            }
+        }
         if(code) places.push(finalCity);
     });
+    console.log(places);
     return places;
 }
 
