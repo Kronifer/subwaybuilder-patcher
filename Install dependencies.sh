@@ -28,9 +28,12 @@ cd patcher/packages/mapPatcher || {
 npm install
 npm install adm-zip --save
 
-echo  > Step 3/3: Installing map tools (pmtiles / gzip)...
-cd patcher\packages\mapPatcher
-cd ../../..
+echo " > Step 3/3: Installing map tools (pmtiles / gzip)..."
+node download_tools.js
+cd ../../../ || {
+    echo "ERROR: Could not change directory back to root"
+    exit 1
+}
 
 echo
 echo "========================================================"
