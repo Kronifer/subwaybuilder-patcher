@@ -13,7 +13,7 @@ let citiesFolder = "";
 if(config2.platform === "windows") {
   citiesFolder = `${process.env.USERPROFILE}\\AppData\\Roaming\\metro-maker4\\cities`;
 } else if(config2.platform === "macos") {
-  citiesFolder = `${process.env.HOME}/Library/Application Support/subway builder/cities/`;
+  citiesFolder = `${process.env.HOME}/Library/Application Support/metro-maker4/cities`;
 } else {
   citiesFolder = `${process.env.HOME}/.config/subway builder/cities/`;
 }
@@ -272,7 +272,7 @@ export async function patcherExec(fileContents) {
           fs.writeFileSync(`${fileContents.PATHS.RENDERERDIR}/city-maps/${place.code.toLowerCase()}.svg`, svgString);
           const listOfPlaceFiles = fs.readdirSync(`${citiesFolder}/data/${place.code}`);
           listOfPlaceFiles.forEach(fileName => {
-            execSync(`gzip -f ${citiesFolder}/data/${place.code}/${fileName}`);
+            execSync(`gzip -f "${citiesFolder}/data/${place.code}/${fileName}"`);
           });
           console.log(`Finished copying and compressing data for ${place.code} (${++counter} of ${config.places.length})`);
           resolve();

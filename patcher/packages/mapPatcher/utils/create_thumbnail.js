@@ -37,7 +37,7 @@ async function fetchWithRetry(url, options = {}, retries = 5, delay = 200) {
             return res;
         } catch (err) {
             if (attempt === retries) throw err; // last attempt fails
-            console.warn(`Fetch failed (attempt ${attempt}): ${err.message}. Retrying in ${delay}ms...`);
+            console.warn(`Fetch for ${url} failed (attempt ${attempt}): ${err.message}. Retrying in ${delay}ms...`);
             await new Promise(r => setTimeout(r, delay));
             delay *= 2; // exponential backoff (optional)
         }
