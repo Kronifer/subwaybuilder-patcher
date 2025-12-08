@@ -7,7 +7,7 @@ import * as turf from '@turf/turf';
 const convertBbox = (bbox) => [bbox[1], bbox[0], bbox[3], bbox[2]];
 
 const runQuery = async (query) => {
-  const res = await fetch("https://maps.mail.ru/osm/tools/overpass/api/interpreter", {
+  const res = await fetch("https://overpass-api.de/api/interpreter", {
     "credentials": "omit",
     "headers": {
       "User-Agent": "SubwayBuilder-Patcher (https://github.com/piemadd/subwaybuilder-patcher)",
@@ -166,6 +166,7 @@ const fetchBuildingsData = async (bbox) => {
 [out:json][timeout:180];
 (
   way["building"](${bbox.join(',')});
+  way["building:part"](${bbox.join(',')});
 );
 out geom;`
 
@@ -173,6 +174,7 @@ out geom;`
 
   return data.elements;
 };
+
 
 const fetchPlacesData = async (bbox) => {
   const neighborhoodsQuery = `
