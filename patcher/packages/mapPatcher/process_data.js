@@ -364,71 +364,126 @@ for (let j = 0; j <= grid_y; j++) {
   rowCoords.push(minLat + j * cs);
 }
 
-// Assign buildings → X cell
-Object.values(processedBuildings).forEach(b => {
-  for (let x = 0; x < columnCoords.length - 1; x++) {
-    const xMin = columnCoords[x];
-    const xMax = columnCoords[x + 1];
-    if (b.center[0] >= xMin && b.center[0] < xMax) {
-      b.xCellCoord = x;
-      break;
-    }
-  }
-});
-
-// Assign buildings → Y cell
-Object.values(processedBuildings).forEach(b => {
-  for (let y = 0; y < rowCoords.length - 1; y++) {
-    const yMin = rowCoords[y];
-    const yMax = rowCoords[y + 1];
-    if (b.center[1] >= yMin && b.center[1] < yMax) {
-      b.yCellCoord = y;
-      break;
-    }
-  }
-});
-
-// Build cell dictionary
+// Build cell dictionary with optimized assignment
 let cellsDict = {};
 Object.values(processedBuildings).forEach(b => {
-  const key = `${b.xCellCoord},${b.yCellCoord}`;
-  if (!cellsDict[key]) cellsDict[key] = [];
-  cellsDict[key].push(b.id);
+  // Calculate which cells the building's bbox spans
+  let start_col = Math.floor((b.bbox.minLon - minLon) / cs_x);
+  let end_col = Math.floor((b.bbox.maxLon - minLon) / cs_x);
+  let start_row = Math.floor((b.bbox.minLat - minLat) / cs);
+  let end_row = Math.floor((b.bbox.maxLat - minLat) / cs);
+  
+  start_col = Math.max(0, start_col);
+  end_col = Math.min(grid_x - 1, end_col);
+  start_row = Math.max(0, start_row);
+  end_row = Math.min(grid_y - 1, end_row);
+  
+  // Check if building spans multiple cells
+  const spansMultipleCells = (end_col > start_col) || (end_row > start_row);
+  
+  if (spansMultipleCells) {
+    // For multi-cell buildings, check actual intersection with each cell
+    const buildingPoly = turf.polygon(b.geometry);
+    
+    for (let c = start_col; c <= end_col; c++) {
+      for (let r = start_row; r <= end_row; r++) {
+        // Create cell polygon
+        const cellMinLon = columnCoords[c];
+        const cellMaxLon = columnCoords[c + 1];
+        const cellMinLat = rowCoords[r];
+        const cellMaxLat = rowCoords[r + 1];
+        
+        const cellPoly = turf.polygon([[
+          [cellMinLon, cellMinLat],
+          [cellMaxLon, cellMinLat],
+          [cellMaxLon, cellMaxLat],
+          [cellMinLon, cellMaxLat],
+          [cellMinLon, cellMinLat]
+        ]]);
+        
+        // Check if building actually intersects this cell
+        try {
+          if (turf.booleanIntersects(buildingPoly, cellPoly)) {
+            const key = `${c},${r}`;
+            if (!cellsDict[key]) cellsDict[key] = [];
+            cellsDict[key].push(b.id);
+          }
+        } catch (e) {
+          // If intersection check fails, include it to be safe
+          const key = `${c},${r}`;
+          if (!cellsDict[key]) cellsDict[key] = [];
+          cellsDict[key].push(b.id);
+        }
+      }
+    }
+  } else {
+    // Single cell building - just add it directly using bbox
+    const key = `${start_col},${start_row}`;
+    if (!cellsDict[key]) cellsDict[key] = [];
+    cellsDict[key].push(b.id);
+  }
 });
 
+let maxDepth = 1; // Track the maximum depth
 
-  let maxDepth = 1;
+const optimizedIndex = optimizeIndex({
+  cellHeightCoords: cs,
+  minLon,
+  minLat,
+  maxLon,
+  maxLat,
+  cols: columnCoords.length,
+  rows: rowCoords.length,
+  cells: cellsDict,
+  buildings: Object.values(processedBuildings).map((building) => {
+const foundationDepth = (() => {
+  // Try to get height in meters from tags
+  const heightRaw = building.tags['building:height'] || building.tags.height;
+  
+  if (heightRaw) {
+    // Strip out non-numeric characters (except decimal point and minus sign)
+    const heightCleaned = String(heightRaw).replace(/[^\d.-]/g, '');
+    const heightInMeters = Number(heightCleaned);
+    
+    if (heightInMeters && !isNaN(heightInMeters) && heightInMeters > 0) {
+      // Use actual height divided by 10 (positive)
+      return Math.max(1, Math.floor(heightInMeters / 10));
+    }
+  }
+  
+  // Fallback: estimate height from levels (assuming 3m per level)
+  if (building.tags['building:levels']) {
+    const levels = Number(building.tags['building:levels']);
+    if (!isNaN(levels) && levels > 0) {
+      const estimatedHeight = levels * 3;
+      return Math.max(1, Math.floor(estimatedHeight / 10));
+    }
+  }
+  
+  // Final fallback if no height or levels data
+  return 2;
+})();
 
-  const optimizedIndex = optimizeIndex({
-    cellHeightCoords: cs,
-    minLon,
-    minLat,
-    maxLon,
-    maxLat,
-    cols: columnCoords.length,
-    rows: rowCoords.length,
-    cells: cellsDict,
-    buildings: Object.values(processedBuildings).map((building) => {
-      if (
-        building.tags['building:levels:underground'] &&
-        Number(building.tags['building:levels:underground']) > maxDepth
-      )
-        maxDepth = Number(building.tags['building:levels:underground']);
+    // Track the maximum foundation depth
+    if (foundationDepth > maxDepth) {
+      maxDepth = foundationDepth;
+    }
 
-      return {
-        minX: building.bbox.minLon,
-        minY: building.bbox.minLat,
-        maxX: building.bbox.maxLon,
-        maxY: building.bbox.maxLat,
-        foundationDepth: building.tags['building:levels:underground'] ? Number(building.tags['building:levels:underground']) : 1,
-        polygon: building.geometry,
-      }
-    }),
-    maxDepth,
-  });
+    return {
+      minX: building.bbox.minLon,
+      minY: building.bbox.minLat,
+      maxX: building.bbox.maxLon,
+      maxY: building.bbox.maxLat,
+      foundationDepth,
+      polygon: building.geometry,
+    }
+  }),
+  maxDepth,
+});
 
-  return optimizedIndex;
+return optimizedIndex;
 }
+
 // Converts water.geojson to ocean_depth_index.json
 const processWater = (place) => {
 
