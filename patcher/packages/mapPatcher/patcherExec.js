@@ -263,7 +263,7 @@ export async function patcherExec(fileContents) {
       promises.push(new Promise((resolve) => {
         generateThumbnail(place.code).then((svgString) => {
           fs.rmSync(`${citiesFolder}/data/${place.code}`, { recursive: true, force: true });
-          fs.mkdirSync(`${citiesFolder}/data/${place.code}`);
+          fs.mkdirSync(`${citiesFolder}/data/${place.code}`, { recursive: true});
           fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, `${citiesFolder}/data/${place.code}/buildings_index.json`);
           fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, `${citiesFolder}/data/${place.code}/demand_data.json`);
           fs.cpSync(`${import.meta.dirname}/processed_data/${place.code}/roads.geojson`, `${citiesFolder}/data/${place.code}/roads.geojson`);
@@ -286,3 +286,4 @@ export async function patcherExec(fileContents) {
       return fileContents;
     });
 }
+
