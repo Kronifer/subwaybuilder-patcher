@@ -270,7 +270,7 @@ app.post('/api/root-config', (req, res) => {
     }
     try {
         const stats = fs.statSync(sbPath);
-        if (!stats.isDirectory()) {
+        if (!stats.isDirectory() && os.platform() === "win32") {
             return res.status(400).json({ error: "Please select the FOLDER, not the .exe file." });
         }
     } catch (e) {
