@@ -147,7 +147,7 @@ const stepRootConfig = {
             <div class="field-group">
                 <label for="sb-path">Installation Path</label>
                 <input type="text" id="sb-path" value="${currentPath}" placeholder="e.g. C:\\Users\\Name\\AppData\\Local\\Programs\\Subway Builder\\" />
-                <small style="color:#888;">Note: On Windows, select the FOLDER containing the executable, not the file itself.</small>
+                <small style="color:#888;">Note: On Windows, select the FOLDER containing the executable, not the file itself.  On Linux, select the .AppImage file.  On Mac, select the .app file.</small>
             </div>
         `;
     },
