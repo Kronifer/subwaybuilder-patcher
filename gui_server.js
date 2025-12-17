@@ -133,22 +133,29 @@ app.post('/api/install-premade-map', (req, res) => {
     try {
         const zip = new AdmZip(zipPath);
         const zipEntries = zip.getEntries();
-        let config = {};
+        let cities = [];
         let configFound = false;
-        let processed_data = [];
 
-        // 1. FIND AND PARSE CONFIG (places.txt or similar)
-        // We look for a file that contains "bbox" and "code"
+        // 1. FIND AND PARSE CONFIG (city_data.txt or city_config.json)
         for (const entry of zipEntries) {
-            if(entry.entryName.toLowerCase().startsWith('city_config.json')) {
-                config = JSON.parse(entry.getData().toString('utf-8'));
+            const entryName = entry.entryName.toLowerCase();
+            if(entryName.includes('city_data.txt') || entryName.includes('city_config.json')) {
+                // Parse city data - it's an array of city objects (with trailing commas)
+                let content = entry.getData().toString('utf-8').trim();
+                // Wrap in array brackets and remove trailing commas to make valid JSON (if not already an array)
+                if (!content.startsWith('[')) {
+                    content = '[' + content + ']';
+                }
+                // Remove trailing commas before closing brackets/braces
+                content = content.replace(/,(\s*[}\]])/g, '$1');
+                cities = JSON.parse(content);
                 configFound = true;
                 break;
             }
         }
 
         if (!configFound) {
-            return res.status(400).json({ error: "Could not find a valid places config (city_config.json) inside the zip." });
+            return res.status(400).json({ error: "Could not find a valid places config (city_data.txt or city_config.json) inside the zip." });
         }
 
         // 2. MERGE CONFIG
@@ -158,28 +165,40 @@ app.post('/api/install-premade-map', (req, res) => {
             const cleanJs = existingContent.replace(/export default/g, 'return');
             try { currentMapConfig = new Function(cleanJs)(); } catch(e) {}
         }
-        currentMapConfig.places.push(config);
+        
+        // Remove existing entries for these city codes to avoid duplicates
+        const newCodes = cities.map(c => c.code);
+        currentMapConfig.places = currentMapConfig.places.filter(p => !newCodes.includes(p.code));
+        currentMapConfig.places.push(...cities);
+        
         fs.writeFileSync(mapConfigPath, `const config = ${JSON.stringify(currentMapConfig, null, 2)};\n\nexport default config;`, 'utf-8');
-        console.log("> Updated mapPatcher config.js");
-
-        fs.mkdirSync(path.join(mapPatcherDir, "processed_data", config.code), { recursive: true });
+        console.log(`> Updated mapPatcher config.js with ${cities.length} cities`);
 
         let wroteTiles = false;
 
+        // 3. EXTRACT FILES
         zipEntries.forEach(entry => {
-            if(entry.entryName.startsWith('processed_data/') && !entry.isDirectory) {
-                const dest = path.join(mapPatcherDir, 'processed_data', config.code, entry.entryName.replace('processed_data/', ''));
+            // Extract processed_data directly (already contains city code subfolders)
+            if(entry.entryName.includes('processed_data/') && !entry.isDirectory) {
+                // Remove the root folder prefix if present
+                const relativePath = entry.entryName.replace(/^[^/]+\/processed_data\//, 'processed_data/');
+                const dest = path.join(mapPatcherDir, relativePath);
+                fs.mkdirSync(path.dirname(dest), { recursive: true });
                 fs.writeFileSync(dest, entry.getData());
             }
-            else if(entry.entryName.endsWith('.pmtiles') && !entry.isDirectory) {
-                const dest = path.join(mapPatcherDir, 'map_tiles', entry.entryName);
+            // Extract map_tiles directly
+            else if(entry.entryName.includes('map_tiles/') && entry.entryName.endsWith('.pmtiles') && !entry.isDirectory) {
+                const filename = path.basename(entry.entryName);
+                const dest = path.join(mapPatcherDir, 'map_tiles', filename);
+                fs.mkdirSync(path.dirname(dest), { recursive: true });
                 fs.writeFileSync(dest, entry.getData());
                 wroteTiles = true;
             }
         });
 
         console.log("> Extraction complete.");
-        let resp = {success: true, message: `Installed ${config.code} from ${filename}.`};
+        const cityNames = cities.map(c => c.name).join(', ');
+        let resp = {success: true, message: `Installed ${cities.length} cities (${cityNames}) from ${filename}.`};
         if(!wroteTiles) {
             resp.warning = "No .pmtiles files were found in the zip. Please run download_tiles.js to generate them.";
         }
