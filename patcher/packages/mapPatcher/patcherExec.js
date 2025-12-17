@@ -59,6 +59,7 @@ export async function patcherExec(fileContents) {
         existingListOfCitiesRaw += JSON.stringify({
             name: place.name,
             code: place.code,
+            country: place.country || "US", // will place any new map in the US country for now unless otherwise specified, adding a new page for each country can be done later
             description: place.description,
             population: place.population,
             initialViewState: place.initialViewState ? place.initialViewState : {
