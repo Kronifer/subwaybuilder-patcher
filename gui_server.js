@@ -204,14 +204,15 @@ app.post('/api/create-shortcut', (req, res) => {
         const gameDir = path.join(rootDir, 'SubwayBuilderPatched');
         
         // Check if mapPatcher server script exists
-        const hasMapPatcher = fs.existsSync(serveScriptWin);
+        const hasMapPatcherWin = fs.existsSync(serveScriptWin);
+        const hasMapPatcherUnix = fs.existsSync(serveScriptUnix);
 
         if (platform === 'win32') {
             const batFile = path.join(desktopDir, 'Launch Patched Game.bat');
             let content = `@echo off\r\n`;
             
             // 1. Attempt to start Map Server (PowerShell)
-            if (hasMapPatcher) {
+            if (hasMapPatcherWin) {
                 // Use Start to launch in new window
                 content += `IF EXIST "${serveScriptWin}" (\r\n`;
                 content += `    echo Starting Map Server...\r\n`;
@@ -228,24 +229,47 @@ app.post('/api/create-shortcut', (req, res) => {
             fs.writeFileSync(batFile, content, 'utf8');
             res.json({ success: true, path: batFile });
 
+        } else if (platform == 'darwin') {
+            const shFile = path.join(desktopDir, 'launch_patched_game.sh');
+            let content = `#!/bin/bash\n`;
+
+            if (hasMapPatcherUnix) {
+                const serveScriptPath = path.join(rootDir, 'patcher', 'packages', 'mapPatcher');
+                content += `if [ -f "${serveScriptUnix}" ]; then\n`;
+                content += `    echo "Starting Map Server..."\n`;
+                content += `    osascript -e 'tell application "Terminal" to do script "cd \\"${serveScriptPath}\\" && bash serve.sh"'\n`;
+                content += `else\n`;
+                content += `    echo "Map Server script not found: ${serveScriptUnix}"\n`;
+                content += `fi\n`;
+            }
+
+            content += `echo "Starting Subway Builder Patched..."\n`;
+            content += `cd "${rootDir}"\n`;
+            content += `open "SubwayBuilderPatched.app"\n`;
+
+            fs.writeFileSync(shFile, content, 'utf8');
+            try { fs.chmodSync(shFile, '755'); } catch(e){}
+			
+            res.json({ success: true, path: shFile });
         } else {
             // macOS / Linux (.sh)
             const shFile = path.join(desktopDir, 'launch_patched_game.sh');
             let content = `#!/bin/bash\n`;
-            
-            // Logic for Unix server? Usually node server or python. 
-            // If serve.ps1 is the only thing provided, we might not be able to run it easily on unix without pwsh.
-            // For now, we just launch the game.
+
+            if (hasMapPatcherUnix) {
+                const serveScriptPath = path.join(rootDir, 'patcher', 'packages', 'mapPatcher');
+                content += `if [ -f "${serveScriptUnix}" ]; then\n`;
+                content += `    echo "Starting Map Server..."\n`;
+                content += `    cd "${serveScriptPath}"\n`;
+                content += `    ./serve.sh &\n`;
+                content += `else\n`;
+                content += `    echo "Map Server script not found: ${serveScriptUnix}"\n`;
+                content += `fi\n`;
+            }
             
             content += `echo "Starting Subway Builder Patched..."\n`;
-            content += `cd "${gameDir}"\n`;
-            
-            // Detect Executable
-            if (platform === 'darwin') {
-                 content += `open "Subway Builder.app"\n`;
-            } else {
-                 content += `./SubwayBuilder.x86_64\n`; // Or whatever linux binary is named
-            }
+            content += `cd "${rootDir}"\n`;
+            content += `./SubwayBuilderPatched.AppImage\n`; // Or whatever linux binary is named
 
             fs.writeFileSync(shFile, content, 'utf8');
             try { fs.chmodSync(shFile, '755'); } catch(e){}
