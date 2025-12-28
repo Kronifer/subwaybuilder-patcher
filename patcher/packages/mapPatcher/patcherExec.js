@@ -15,7 +15,7 @@ if(config2.platform === "windows") {
 } else if(config2.platform === "macos") {
   citiesFolder = `${process.env.HOME}/Library/Application Support/metro-maker4/cities`;
 } else {
-  citiesFolder = `${process.env.HOME}/.config/subway builder/cities/`;
+  citiesFolder = `${process.env.HOME}/.config/metro-maker4/cities/`;
 }
 
 export async function patcherExec(fileContents) {
@@ -287,4 +287,5 @@ export async function patcherExec(fileContents) {
       return fileContents;
     });
 }
+
 
