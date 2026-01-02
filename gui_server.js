@@ -207,7 +207,7 @@ app.post('/api/create-shortcut', (req, res) => {
         const hasMapPatcher = fs.existsSync(serveScriptWin);
 
         if (platform === 'win32') {
-            const batFile = path.join(desktopDir, 'Launch Patched Game.bat');
+            const batFile = path.join(process.cwd(), "Launch Patched Game.bat");
             let content = `@echo off\r\n`;
             
             // 1. Attempt to start Map Server (PowerShell)
@@ -227,6 +227,11 @@ app.post('/api/create-shortcut', (req, res) => {
 
             fs.writeFileSync(batFile, content, 'utf8');
             res.json({ success: true, path: batFile });
+			console.log(
+				"Launch script created at:",
+				batFile,
+				". Feel free to move it to your desktop"
+			);
 
         } else {
             // macOS / Linux (.sh)
