@@ -61,7 +61,6 @@ export async function patcherExec(fileContents) {
             code: place.code,
             country: place.country || "US", // will place any new map in the US country for now unless otherwise specified, adding a new page for each country can be done later
             description: place.description,
-            population: place.population,
             initialViewState: place.initialViewState ? place.initialViewState : {
                 zoom: 13.5,
                 latitude: (place.bbox[1] + place.bbox[3]) / 2,
@@ -69,6 +68,10 @@ export async function patcherExec(fileContents) {
                 bearing: 0,
             }
         }) + ", ";
+        fileContents.CITYPOPULATIONS.push({
+            code: place.code,
+            population: place.population
+        });
     });
     const finalCitiesList = existingListOfCitiesRaw.slice(0, -2) + '];';
     fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startOfCitiesArea, endOfCitiesArea, finalCitiesList);
@@ -287,5 +290,6 @@ export async function patcherExec(fileContents) {
       return fileContents;
     });
 }
+
 
 
