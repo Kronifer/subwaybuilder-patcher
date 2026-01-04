@@ -48,7 +48,8 @@ const asarPath = path.join(SQUASHFS_DIR, 'resources', 'app.asar');
 execSync(`npx @electron/asar extract ${q(asarPath)} ${q(EXTRACTED_DIR)}`);
 
 console.log('Locating files in public directory');
-const publicDir = path.join(EXTRACTED_DIR, 'dist', 'renderer', 'public');
+const rendererDir = path.join(EXTRACTED_DIR, 'dist', 'renderer');
+const publicDir = path.join(rendererDir, 'public');
 const filesInPublicDirectory = fs.readdirSync(publicDir);
 
 const findFile = (prefix) => filesInPublicDirectory.find(f => f.startsWith(prefix) && f.endsWith('.js'));
@@ -57,9 +58,10 @@ const indexJS = findFile('index-');
 const gameMainJS = findFile('GameMain-');
 const interlinedRoutesJS = findFile('interlinedRoutes');
 const popCommuteWorkerJS = findFile('popCommuteWorker');
+const cityPopulationsJSON = path.join(rendererDir, 'cityPopulations.json');
 
 if (!indexJS || !gameMainJS || !interlinedRoutesJS || !popCommuteWorkerJS) {
-    console.error("CRITICAL ERROR: Could not locate index.js, GameMain.js, interlinedRoutes.js and/or popCommuteworker.js in public directory!");
+    console.error("CRITICAL ERROR: Could not locate index.js, GameMain.js, interlinedRoutes.js, and/or popCommuteworker.js in public directory!");
     process.exit(1);
 }
 
@@ -68,10 +70,11 @@ fileContents.INDEX = fs.readFileSync(path.join(publicDir, indexJS), 'utf-8');
 fileContents.GAMEMAIN = fs.readFileSync(path.join(publicDir, gameMainJS), 'utf-8');
 fileContents.INTERLINEDROUTES = fs.readFileSync(path.join(publicDir, interlinedRoutesJS), 'utf-8');
 fileContents.POPCOMMUTEWORKER = fs.readFileSync(path.join(publicDir, popCommuteWorkerJS), 'utf-8');
+fileContents.CITYPOPULATIONS = JSON.parse(fs.readFileSync(cityPopulationsJSON, "utf8"));
 
 fileContents.PATHS = {};
 fileContents.PATHS.RESOURCESDIR = path.join(SQUASHFS_DIR, 'resources') + path.sep;
-fileContents.PATHS.RENDERERDIR = path.join(EXTRACTED_DIR, 'dist', 'renderer') + path.sep;
+fileContents.PATHS.RENDERERDIR = rendererDir + path.sep;
 
 let promises = [];
 for(const packageName of config.packagesToRun) {
@@ -97,6 +100,7 @@ Promise.all(promises).then((mods) => {
         fs.writeFileSync(path.join(publicDir, gameMainJS), fileContents.GAMEMAIN, 'utf-8');
         fs.writeFileSync(path.join(publicDir, interlinedRoutesJS), fileContents.INTERLINEDROUTES, 'utf-8');
         fs.writeFileSync(path.join(publicDir, popCommuteWorkerJS), fileContents.POPCOMMUTEWORKER, 'utf-8');
+        fs.writeFileSync(cityPopulationsJSON, JSON.stringify(fileContents.CITYPOPULATIONS, null, 2));
 
         console.log("Repacking app.asar");
         // FIX: Added quotes around paths here too
@@ -176,4 +180,5 @@ Promise.all(promises).then((mods) => {
         console.log("Done!");
         process.exit(0); // FIX: exit because successful instead of error
     });
+
 });
