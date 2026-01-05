@@ -360,7 +360,10 @@ function createMapPatcherStep(pkgName) {
 					</div>
                     <h3>Manual Configuration</h3>
                     <div id="places-container"></div>
-                    <button id="btn-add-place" class="btn-secondary" style="margin-top:10px;">+ Add Place</button>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                        <button id="btn-add-place" class="btn-secondary">+ Add Place</button>
+                        <button id="btn-save-config" class="btn-primary">Save config</button>
+                    </div>
                     
                     <div style="margin-top:20px; border-top:1px solid #444; padding-top:10px;">
                         <h4>Advanced Actions</h4>
@@ -410,6 +413,7 @@ function createMapPatcherStep(pkgName) {
             // Advanced Actions
             loadAdvancedPlaces(pkgName);
             document.getElementById('btn-add-place').addEventListener('click', () => addPlaceCard());
+            document.getElementById('btn-save-config').addEventListener('click', () => savePlaceConfig(pkgName));
 
             const showTerm = () => terminalWrapper.style.display = 'block';
             document.getElementById('btn-full-setup-adv').addEventListener('click', () => { showTerm(); startMapSetupSequence(pkgName); });
@@ -418,12 +422,7 @@ function createMapPatcherStep(pkgName) {
             document.getElementById('btn-dl-tiles').addEventListener('click', () => { showTerm(); startMapSetupSequence(pkgName, ['download_tiles.js']); });
         },
         validate: () => true,
-        save: async () => {
-            const filename = document.getElementById('raw-filename').value;
-            const places = scrapePlaces();
-            const content = `const config = {\n    "tile-zoom-level": 16, \n    "places": ${JSON.stringify(places, null, 4)},\n};\nexport default config;`;
-            await fetch(`/api/package-config/${pkgName}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ filename, content }) });
-        }
+        save: () => savePlaceConfig(pkgName)
     };
 }
 
@@ -779,6 +778,13 @@ function loadAdvancedPlaces(pkgName) {
         container.innerHTML = "";
         if (configObj.places && Array.isArray(configObj.places)) configObj.places.forEach(p => addPlaceCard(p));
     });
+}
+
+async function savePlaceConfig(pkgName) {
+    const filename = document.getElementById('raw-filename').value;
+    const places = scrapePlaces();
+    const content = `const config = {\n    "tile-zoom-level": 16, \n    "places": ${JSON.stringify(places, null, 4)},\n};\nexport default config;`;
+    await fetch(`/api/package-config/${pkgName}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ filename, content }) });
 }
 
 function addPlaceCard(place = {}) {
