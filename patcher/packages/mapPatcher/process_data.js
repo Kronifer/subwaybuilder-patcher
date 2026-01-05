@@ -2,6 +2,11 @@ import fs from 'fs';
 import config from './config.js';
 import * as turf from '@turf/turf';
 import { createParseStream } from 'big-json';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const optimizeBuilding = (unOptimizedBuilding) => {
   return {
@@ -433,7 +438,7 @@ Object.values(processedBuildings).forEach(b => {
 const processWater = (place) => {
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
-  const inputPath = `${import.meta.dirname}/raw_data/${place.code}/water.geojson`;
+  const inputPath = `${__dirname}/raw_data/${place.code}/water.geojson`;
   if (!fs.existsSync(inputPath)) {
     console.warn(`No water.geojson found for ${place.code}`);
     return null;
@@ -567,8 +572,8 @@ const processAllData = async (place) => {
   };
 
   console.log('Reading raw data for', place.code);
-  const rawBuildings = await readJsonFile(`${import.meta.dirname}/raw_data/${place.code}/buildings.json`);
-  const rawPlaces = await readJsonFile(`${import.meta.dirname}/raw_data/${place.code}/places.json`);
+  const rawBuildings = await readJsonFile(`${__dirname}/raw_data/${place.code}/buildings.json`);
+  const rawPlaces = await readJsonFile(`${__dirname}/raw_data/${place.code}/places.json`);
 
   console.log('Processing Buildings for', place.code)
   const processedBuildings = processBuildings(place, rawBuildings);
@@ -578,18 +583,18 @@ const processAllData = async (place) => {
   const processedWater = processWater(place);
 
   console.log('Writing finished data for', place.code)
-  fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/buildings_index.json`, JSON.stringify(processedBuildings), { encoding: 'utf8' });
-  fs.cpSync(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, `${import.meta.dirname}/processed_data/${place.code}/roads.geojson`);
-  fs.cpSync(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, `${import.meta.dirname}/processed_data/${place.code}/runways_taxiways.geojson`);
-  fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/demand_data.json`, JSON.stringify(processedConnections), { encoding: 'utf8' });
-  if (processedWater) {fs.writeFileSync(`${import.meta.dirname}/processed_data/${place.code}/ocean_depth_index.json`, JSON.stringify(processedWater), { encoding: 'utf8' });}
+  fs.writeFileSync(`${__dirname}/processed_data/${place.code}/buildings_index.json`, JSON.stringify(processedBuildings), { encoding: 'utf8' });
+  fs.cpSync(`${__dirname}/raw_data/${place.code}/roads.geojson`, `${__dirname}/processed_data/${place.code}/roads.geojson`);
+  fs.cpSync(`${__dirname}/raw_data/${place.code}/runways_taxiways.geojson`, `${__dirname}/processed_data/${place.code}/runways_taxiways.geojson`);
+  fs.writeFileSync(`${__dirname}/processed_data/${place.code}/demand_data.json`, JSON.stringify(processedConnections), { encoding: 'utf8' });
+  if (processedWater) {fs.writeFileSync(`${__dirname}/processed_data/${place.code}/ocean_depth_index.json`, JSON.stringify(processedWater), { encoding: 'utf8' });}
 };
 
-if (!fs.existsSync(`${import.meta.dirname}/processed_data`)) fs.mkdirSync(`${import.meta.dirname}/processed_data`);
+if (!fs.existsSync(`${__dirname}/processed_data`)) fs.mkdirSync(`${__dirname}/processed_data`);
 config.places.forEach((place) => {
   (async () => {
-    if (fs.existsSync(`${import.meta.dirname}/processed_data/${place.code}`)) fs.rmSync(`${import.meta.dirname}/processed_data/${place.code}`, { recursive: true, force: true });
-    fs.mkdirSync(`${import.meta.dirname}/processed_data/${place.code}`)
+    if (fs.existsSync(`${__dirname}/processed_data/${place.code}`)) fs.rmSync(`${__dirname}/processed_data/${place.code}`, { recursive: true, force: true });
+    fs.mkdirSync(`${__dirname}/processed_data/${place.code}`)
     await processAllData(place);
     console.log(`Finished processing ${place.code}.`);
   })();
