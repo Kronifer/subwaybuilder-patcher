@@ -5,15 +5,19 @@ import { SphericalMercator } from '@mapbox/sphericalmercator';
 import { VectorTile } from '@mapbox/vector-tile';
 import Pbf from 'pbf';
 import config from './config.js';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const mercator = new SphericalMercator({size: 256});
-const pmtilesPath = path.join(import.meta.dirname, 'map_tiles', 'pmtiles');
+const pmtilesPath = path.join(__dirname, 'map_tiles', 'pmtiles');
 
 const extractWater = (place) => {
     console.log(`Extracting water layer for ${place.name}`);
     
-    const pmtilesFile = path.join(import.meta.dirname, 'map_tiles', `${place.code}.pmtiles`);
-    const outputDir = path.join(import.meta.dirname, 'raw_data', place.code);
+    const pmtilesFile = path.join(__dirname, 'map_tiles', `${place.code}.pmtiles`);
+    const outputDir = path.join(__dirname, 'raw_data', place.code);
     if (!fs.existsSync(outputDir)) {fs.mkdirSync(outputDir);}
 
     const xyz = mercator.xyz(place.bbox, 13);
@@ -49,6 +53,6 @@ let protomapsBucket = `https://build.protomaps.com/${date.getFullYear()}${(date.
 console.log("Downloading map tiles");
 for(var place of config.places) {
     console.log(`Fetching tiles for ${place.name} (${place.code})`);
-    execSync(`${pmtilesPath} extract ${protomapsBucket} --maxzoom=${config['tile-zoom-level']} --bbox="${place.bbox.join(',')}" ${import.meta.dirname}/./map_tiles/${place.code}.pmtiles`);   
+    execSync(`${pmtilesPath} extract ${protomapsBucket} --maxzoom=${config['tile-zoom-level']} --bbox="${place.bbox.join(',')}" ${__dirname}/./map_tiles/${place.code}.pmtiles`);   
     extractWater(place);
 }

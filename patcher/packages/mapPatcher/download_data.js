@@ -3,6 +3,11 @@ import { createParseStream, createStringifyStream } from 'big-json';
 import { Readable } from "stream";
 import config from './config.js';
 import * as turf from '@turf/turf';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const convertBbox = (bbox) => [bbox[1], bbox[0], bbox[3], bbox[2]];
 
@@ -197,7 +202,7 @@ out geom;
 */
 
 const fetchAllData = async (place) => {
-  if (!fs.existsSync(`${import.meta.dirname}/raw_data/${place.code}`)) fs.mkdirSync(`${import.meta.dirname}/raw_data/${place.code}`);
+  if (!fs.existsSync(`${__dirname}/raw_data/${place.code}`)) fs.mkdirSync(`${__dirname}/raw_data/${place.code}`);
   console.log(`Fetching ${place.name} (${place.code}) - May take a while`);
   const convertedBoundingBox = convertBbox(place.bbox);
   console.time(`${place.name} (${place.code}) Road Data Fetch`);
@@ -215,16 +220,16 @@ const fetchAllData = async (place) => {
 
   try {
     console.time(`Writing roads for ${place.name} (${place.code})`);
-    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, JSON.stringify(roadData), { encoding: 'utf8' });
+    fs.writeFileSync(`${__dirname}/raw_data/${place.code}/roads.geojson`, JSON.stringify(roadData), { encoding: 'utf8' });
     console.timeEnd(`Writing roads for ${place.name} (${place.code})`);
     console.time(`Writing buildings for ${place.name} (${place.code})`);
-    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/buildings.json`, JSON.stringify(buildingData), { encoding: 'utf8' });
+    fs.writeFileSync(`${__dirname}/raw_data/${place.code}/buildings.json`, JSON.stringify(buildingData), { encoding: 'utf8' });
     console.timeEnd(`Writing buildings for ${place.name} (${place.code})`);
     console.time(`Writing places for ${place.name} (${place.code})`);
-    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/places.json`, JSON.stringify(placesData), { encoding: 'utf8' });
+    fs.writeFileSync(`${__dirname}/raw_data/${place.code}/places.json`, JSON.stringify(placesData), { encoding: 'utf8' });
     console.timeEnd(`Writing places for ${place.name} (${place.code})`);
     console.time(`Writing runways/taxiways for ${place.name} (${place.code})`);
-    fs.writeFileSync(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, JSON.stringify(runwayTaxiwayData), { encoding: 'utf8' });
+    fs.writeFileSync(`${__dirname}/raw_data/${place.code}/runways_taxiways.geojson`, JSON.stringify(runwayTaxiwayData), { encoding: 'utf8' });
     console.timeEnd(`Writing runways/taxiways for ${place.name} (${place.code})`);
   } catch (e) { // falling back to slower but more reliable big-json if files are too big
     console.time(`Writing roads for ${place.name} (${place.code})`);
@@ -232,10 +237,10 @@ const fetchAllData = async (place) => {
     console.time(`Writing places for ${place.name} (${place.code})`);
     console.time(`Writing runways/taxiways for ${place.name} (${place.code})`);
 
-    const roadsWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/roads.geojson`, { encoding: 'utf8' });
-    const buildingsWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/buildings.json`, { encoding: 'utf8' });
-    const placesWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/places.json`, { encoding: 'utf8' });
-    const runwaysTaxiwaysWriteStream = fs.createWriteStream(`${import.meta.dirname}/raw_data/${place.code}/runways_taxiways.geojson`, { encoding: 'utf8' });
+    const roadsWriteStream = fs.createWriteStream(`${__dirname}/raw_data/${place.code}/roads.geojson`, { encoding: 'utf8' });
+    const buildingsWriteStream = fs.createWriteStream(`${__dirname}/raw_data/${place.code}/buildings.json`, { encoding: 'utf8' });
+    const placesWriteStream = fs.createWriteStream(`${__dirname}/raw_data/${place.code}/places.json`, { encoding: 'utf8' });
+    const runwaysTaxiwaysWriteStream = fs.createWriteStream(`${__dirname}/raw_data/${place.code}/runways_taxiways.geojson`, { encoding: 'utf8' });
 
     const roadStringifyStream = createStringifyStream({ body: roadData });
     const buildingsStringifyStream = createStringifyStream({ body: buildingData });
@@ -268,7 +273,7 @@ const fetchAllData = async (place) => {
   }
 };
 
-if (!fs.existsSync(`${import.meta.dirname}/raw_data`)) fs.mkdirSync(`${import.meta.dirname}/raw_data`);
+if (!fs.existsSync(`${__dirname}/raw_data`)) fs.mkdirSync(`${__dirname}/raw_data`);
 config.places.forEach((place) => {
   fetchAllData(place);
 });
