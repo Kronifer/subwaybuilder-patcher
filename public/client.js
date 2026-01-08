@@ -787,10 +787,13 @@ function addPlaceCard(place = {}) {
     div.className = 'place-card';
     div.innerHTML = `
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>Country</label><input type="text" class="inp-country" value="${place.country||''}"></div>
             <div><label>Code</label><input type="text" class="inp-code" value="${place.code||''}"></div>
-            <div><label>Name</label><input type="text" class="inp-name" value="${place.name||''}"></div>
         </div>
-        <div style="margin-top:5px;"><label>Description</label><input type="text" class="inp-desc" value="${place.description||''}"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>Name</label><input type="text" class="inp-name" value="${place.name||''}"></div>
+            <div><label>Description</label><input type="text" class="inp-desc" value="${place.description||''}"></div>
+        </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:5px;">
             <div style="margin-top:5px;"><label>Population</label><input type="number" class="inp-population" value="${place.population || 0}"></div>
             <div style="margin-top:5px;"><label>BBox</label><input type="text" class="inp-bbox" value="${place.bbox ? place.bbox.join(',') : ''}" placeholder="-79.4, 43.6, ..."></div>
@@ -818,6 +821,7 @@ function addPlaceCard(place = {}) {
 function scrapePlaces() {
     const places = [];
     document.querySelectorAll('.place-card').forEach(card => {
+        const country = card.querySelector('.inp-country').value;
         const code = card.querySelector('.inp-code').value;
         const name = card.querySelector('.inp-name').value;
         const desc = card.querySelector('.inp-desc').value;
@@ -834,7 +838,7 @@ function scrapePlaces() {
         try { bbox = bboxStr.split(',').map(n => parseFloat(n.trim())); } catch(e){}
         let thumbnailBbox = [];
         try { thumbnailBbox = thumbBboxStr.split(',').map(n => parseFloat(n.trim())); } catch(e){}
-        let finalCity = { code, name, description: desc, bbox, population };
+        let finalCity = { country, code, name, description: desc, bbox, population };
         console.log(initialViewState);
         if(thumbnailBbox.length === 4) finalCity.thumbnailBbox = thumbnailBbox;
         let ivsValid = true;
