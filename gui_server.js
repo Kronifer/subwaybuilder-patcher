@@ -215,7 +215,8 @@ app.post('/api/create-shortcut', (req, res) => {
                 // Use Start to launch in new window
                 content += `IF EXIST "${serveScriptWin}" (\r\n`;
                 content += `    echo Starting Map Server...\r\n`;
-                content += `    start "Subway Builder Map Server" powershell -ExecutionPolicy Bypass -NoExit -File "${serveScriptWin}"\r\n`;
+				content += `    cd /d "${path.dirname(serveScriptWin)}"\r\n`;
+                content += `    start "Subway Builder Map Server" powershell -ExecutionPolicy Bypass -NoExit -File .\serve.ps1\r\n`;
                 content += `)\r\n`;
             }
 
