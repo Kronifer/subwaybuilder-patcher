@@ -140,8 +140,8 @@ const processPlaceConnections = (place, rawBuildings, rawPlaces) => {
   rawBuildings.forEach((building) => {
     if (building.tags.building) { // should always be true, but why not
       const __coords = building.geometry.map((point) => [point.lon, point.lat]);
-      if (__coords.length < 3) return;
       if (__coords[0][0] !== __coords[__coords.length - 1][0] || __coords[0][1] !== __coords[__coords.length - 1][1]) __coords.push(__coords[0]);
+      if (__coords.length < 4) return;
       const buildingGeometry = turf.polygon([__coords]);
       let buildingAreaMultiplier = Math.max(Number(building.tags['building:levels']), 1); // assuming a single story if no level data
       if (isNaN(buildingAreaMultiplier)) buildingAreaMultiplier = 1;
@@ -324,8 +324,8 @@ const processBuildings = (place, rawBuildings) => {
 
       return [coord.lon, coord.lat];
     });
-    if (__points.length < 3) return;
     if (__points[0][0] !== __points[__points.length - 1][0] || __points[0][1] !== __points[__points.length - 1][1]) __points.push(__points[0]);
+    if (__points.length < 4) return;
     const buildingPolygon = turf.polygon([__points]);
     const buildingCenter = turf.centerOfMass(buildingPolygon);
 
@@ -594,3 +594,4 @@ config.places.forEach((place) => {
     console.log(`Finished processing ${place.code}.`);
   })();
 });
+
