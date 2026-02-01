@@ -55,11 +55,12 @@ export async function patcherExec(fileContents) {
     const endOfCitiesArea = fileContents.INDEX.indexOf('}];', startOfCitiesArea) + 2;
     if (startOfCitiesArea == -1 || endOfCitiesArea == -1) throw new Error("Could not find cities array in index.js");
     let existingListOfCitiesRaw = fileContents.INDEX.substring(startOfCitiesArea, endOfCitiesArea - 1) + ", ";
+    let countryToAdd = [];
     config.places.forEach(place => {
         existingListOfCitiesRaw += JSON.stringify({
             name: place.name,
             code: place.code,
-            country: place.country || "US", // will place any new map in the US country for now unless otherwise specified, adding a new page for each country can be done later
+            country: place.country.toUpperCase() || "US", // will place any new map in the US country for now unless otherwise specified, adding a new page for each country can be done later
             description: place.description,
             initialViewState: place.initialViewState ? place.initialViewState : {
                 zoom: 13.5,
@@ -72,9 +73,41 @@ export async function patcherExec(fileContents) {
             code: place.code,
             population: place.population
         });
+        if (place.country && (place.country != "US" && place.country != "UK")) {
+            if (countryToAdd.indexOf(place.country.toUpperCase()) === -1) {
+                countryToAdd.push(place.country.toUpperCase());
+            }
+        }
     });
     const finalCitiesList = existingListOfCitiesRaw.slice(0, -2) + '];';
     fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startOfCitiesArea, endOfCitiesArea, finalCitiesList);
+    const searchCountry = `" })
+          ] })
+        }
+      )`;
+    const startOfCountriesArea = fileContents.INDEX.lastIndexOf(searchCountry) + searchCountry.length; // will give us the start of the array
+    let finalCountriesList = '';
+    const displayName = new Intl.DisplayNames(['en'], {type: 'region'});
+    countryToAdd.forEach(country => {
+        const flag = country.toUpperCase().split('').map(c => String.fromCodePoint(c.codePointAt(0) - 0x41 + 0x1F1E6)).join('');
+        finalCountriesList += `,
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        CustomButton,
+        {
+          onClick: () => setSelectedCountry("${country}"),
+          selected: selectedCountry === "${country}",
+          className: "text-xl h-11 font-bold",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "flex items-center gap-3 text-2xl", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "${country}" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "hidden sm:block", children: "${displayName.of(country)}" }),
+            " ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-3xl", children: "${flag}" })
+          ] })
+        }
+      )`;
+    });
+    fileContents.INDEX = stringReplaceAt(fileContents.INDEX, startOfCountriesArea, startOfCountriesArea, finalCountriesList + `
+`);
     console.log('Extracting existing map config')
     const startOfMapConfig = fileContents.GAMEMAIN.indexOf('const sources = {') + 'const sources = '.length; // will give us the start of the config
     const endOfMapConfig = fileContents.GAMEMAIN.indexOf('const layers', startOfMapConfig) - 1;
