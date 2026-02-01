@@ -42,7 +42,7 @@ const extractWater = (place) => {
     fs.writeFileSync(path.join(outputDir, 'water.geojson'), JSON.stringify({ type: "FeatureCollection", features }));
 };
 
-let date = new Date(Date.now() - 86400000); // Yesterday, in case todays build hasn't come out yet
+let date = new Date(Date.now() - 172800000); // Two days ago, in case today's and yesterday's builds haven't come out yet
 
 let protomapsBucket = `https://build.protomaps.com/${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}.pmtiles`
 
@@ -52,3 +52,4 @@ for(var place of config.places) {
     execSync(`${pmtilesPath} extract ${protomapsBucket} --maxzoom=${config['tile-zoom-level']} --bbox="${place.bbox.join(',')}" ${import.meta.dirname}/./map_tiles/${place.code}.pmtiles`);   
     extractWater(place);
 }
+
