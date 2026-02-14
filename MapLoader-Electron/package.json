@@ -43,6 +43,7 @@
     "@fontsource/roboto": "^5.2.9",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.8",
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "unzipper": "^0.12.3"
   }
 }

@@ -8,7 +8,12 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import MapList from './components/mapList.jsx';
-import Modal from '@mui/material/Modal';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
 
 const darkTheme = createTheme({
     palette: {
@@ -18,30 +23,88 @@ const darkTheme = createTheme({
 
 const root = createRoot(document);
 
-root.render(
-    <React.Fragment>
+function MainPage() {
+    function onClose(event) {
+        if(event.type === "click") {
+           return; 
+        }
+        setShowFirstRunDialog(false);
+        setShowCheckPathDialog(true);
+    }
+
+    let [firstRun, setFirstRun] = React.useState(window.localStorage.getItem('firstRun') === null ? true : false);
+    let [showFirstRunDialog, setShowFirstRunDialog] = React.useState(firstRun);
+    let [tempPath, setTempPath] = React.useState("");
+    let [showCheckPathDialog, setShowCheckPathDialog] = React.useState(false);
+    let [showModifyPathDialog, setShowModifyPathDialog] = React.useState(false);
+    let [mapRows, setMapRows] = React.useState(JSON.parse(window.localStorage.getItem('mapRows')) || []);
+
+    return (
+        <React.Fragment>
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            <Modal open={window.localStorage.getItem("welcomeShown") !== "true"} onClose={() => window.localStorage.setItem("welcomeShown", "true")}>
-                <div style={{position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", backgroundColor: "#333", padding: "2rem", borderRadius: "8px"}}>
-                    <Typography variant="h4" align="center" gutterBottom>
-                        Welcome to Map Loader!
-                    </Typography>
-                    <Typography variant="body1" align="center">
-                        This application allows you to manage your maps with ease. You can add, delete, and organize your maps all in one place. Get started by adding your first map!
-                    </Typography>
-                </div>
-            </Modal>
+            <Dialog open={showFirstRunDialog} onClose={onClose}>
+                <DialogTitle>Welcome to Map Loader!</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        It looks like this is your first time running Map Loader. Please select the folder where Subway Builder stores its App Data.
+                    </DialogContentText>
+                    <DialogContentText>
+                        This is usually located at the following locations: <br/>
+                    </DialogContentText>
+                    <ul>
+                        <li><Typography color="textSecondary">Windows: C:\Users\%username%\AppData\Roaming\metro-maker4</Typography></li>
+                        <li><Typography color="textSecondary">macOS: /Users/%username%/Library/Application Support/metro-maker4</Typography></li>
+                        <li><Typography color="textSecondary">Linux: /home/%username%/.local/share/metro-maker4</Typography></li>
+                    </ul>
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="contained" color="primary" onClick={() => {
+                        let path = window.electron.openFolderDialog();
+                        setTempPath(path);
+                        onClose({type: "pathSelected"});
+                    }}>Select</Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog open={showCheckPathDialog} onClose={(e) => {if(e.type === "click"){return;}setShowCheckPathDialog(false)}}>
+                <DialogTitle>Path Confirmation</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        You have selected the following path: <strong>{tempPath}</strong>. Is this correct?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button variant="outlined" color="secondary" onClick={() => {
+                        setTempPath(window.electron.openFolderDialog());
+                    }}>No, Change</Button>
+                    <Button variant="contained" color="primary" onClick={() => {
+                        setShowCheckPathDialog(false);
+                        setFirstRun(false);
+                        window.localStorage.setItem('firstRun', 'false');
+                        window.localStorage.setItem('appDataPath', tempPath);
+                    }}>Yes</Button>
+                </DialogActions>
+            </Dialog>
             <Typography variant="h3" align="center" gutterBottom>
                 Map Loader
             </Typography>
-            <div style={{"alignItems": "center", "width": "100%", display: "flex", justifyContent: "center"}}>
-            <MapList rows={[
-                {mapName: 'Map 1', creator: 'Creator 1', version: '1.0'},
-                {mapName: 'Map 2', creator: 'Creator 2', version: '1.0'},
-                {mapName: 'Map 3', creator: 'Creator 3', version: '1.0'},
-            ]} />
+            <div style={{display: "flex", justifyContent: "center", marginBottom: "1rem", alignItems: "center", flexDirection: "row", gap: "1rem"}}>
+                <Button variant="contained" color="info">Add a Map</Button>
+                <Button variant="contained" color="success">Patch Game</Button>
+            </div>
+            <div style={{"alignItems": "center", "width": "100%", display: "flex", justifyContent: "center", flexDirection: "column"}}>
+            <MapList rows={mapRows}/>
+            {mapRows.length === 0 && (
+                <Typography marginTop={1} variant="h6" color="textSecondary" align="center">
+                    No maps found yet. Add some above!
+                </Typography>
+            )}
             </div>
         </ThemeProvider>
     </React.Fragment>
+    )
+}
+
+root.render(
+    <MainPage />
 )

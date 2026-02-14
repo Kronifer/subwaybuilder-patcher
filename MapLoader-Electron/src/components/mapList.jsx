@@ -12,6 +12,7 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function MapList({rows}) {
     return (
@@ -34,7 +35,7 @@ export default function MapList({rows}) {
                             <TableCell>{row.creator}</TableCell>
                             <TableCell>{row.version}</TableCell>
                             <TableCell>
-                                <Button color="error" variant="contained">Delete</Button>
+                                <Button color="error" variant="contained"><DeleteIcon/></Button>
                             </TableCell>
                         </TableRow>
                     ))}
