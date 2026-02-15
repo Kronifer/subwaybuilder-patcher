@@ -18,7 +18,6 @@ module.exports = {
     {
       name: '@electron-forge/maker-snap',
       config: {
-        out: "out/make/ubuntu-latest",
         features: {
           audio: true,
           webgl: true

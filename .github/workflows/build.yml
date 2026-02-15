@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, macos-latest-large, ubuntu-latest]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.2
