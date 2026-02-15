@@ -33,6 +33,6 @@ jobs:
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ${{matrix.os}} Release
-          path: ./MapLoader-Electron/out
+          path: ./MapLoader-Electron/out/make
           
           
