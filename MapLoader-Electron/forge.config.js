@@ -9,15 +9,11 @@ module.exports = {
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
-      config: {
-        out: "out/make/windows-latest"
-      },
+      config: {}
     },
     {
       name: "@electron-forge/maker-dmg",
-      config: {
-        out: "out/make/macos-latest",
-      }
+      config: {}
     },
     {
       name: '@electron-forge/maker-snap',
