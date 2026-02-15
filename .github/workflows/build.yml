@@ -17,9 +17,12 @@ jobs:
         uses: actions/setup-node@v6.2.0
         with:
           node-version: 24.9.0
+      - name: Install Dependencies
+        working-directory: "./MapLoader-Electron"
+        run: "npm install"
       - name: Build Executables
         working-directory: "./MapLoader-Electron"
-        run: "npm install & npm run make"
+        run: "npm run make"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v6.0.0
         with:
