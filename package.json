@@ -5,11 +5,13 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@electron/asar": "^4.0.1",
+    "@mapbox/sphericalmercator": "^2.0.2",
+    "@mapbox/vector-tile": "^2.0.4",
+    "@turf/turf": "^7.3.2",
     "adm-zip": "^0.5.16",
     "big-json": "^3.2.0",
-    "express": "^5.2.1",
-    "open": "^11.0.0",
-    "socket.io": "^4.8.3"
+    "geojson2svg": "^2.0.3",
+    "piscina": "^5.1.4",
+    "stream-json": "^1.9.1"
   }
 }
