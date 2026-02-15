@@ -2,7 +2,6 @@ import {VectorTile} from '@mapbox/vector-tile';
 import Protobuf from 'pbf';
 import {GeoJSON2SVG} from 'geojson2svg';
 import * as turf from '@turf/turf';
-import config from '../config.js';
 import { SphericalMercator } from '@mapbox/sphericalmercator';
 
 // By default, precomputes up to z30
@@ -11,7 +10,7 @@ const merc = new SphericalMercator({
   antimeridian: true
 });
 
-export function generateThumbnail(cityCode) {
+export function generateThumbnail(cityCode, cityConfig) {
 const lon2tile = (lon, zoom) => {
     return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
 }
@@ -20,7 +19,7 @@ const lat2tile = (lat, zoom) => {
     return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
 }
 
-const bboxToUse = config.places.find(p => p.code === cityCode).thumbnailBbox ? config.places.find(p => p.code === cityCode).thumbnailBbox : config.places.find(p => p.code === cityCode).bbox;
+const bboxToUse = cityConfig.thumbnailBbox ? cityConfig.thumbnailBbox : cityConfig.bbox;
 
 const minXTileCoord = lon2tile(bboxToUse[0], 12);
 const maxYTileCoord = lat2tile(bboxToUse[1], 12);

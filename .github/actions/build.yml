@@ -1,0 +1,26 @@
+name: Build Installers
+on: push
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6.0.2
+      - name: Install Node.JS
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: 24.9.0
+      - name: Build Executables
+        working-directory: "./MapLoader-Electron"
+        run: "npm install & npm run make"
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: ${{matrix.os}} Release
+          path: ./MapLoader-Electron/out/$${matrix.os}}
+          
+          

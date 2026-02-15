@@ -1,5 +1,5 @@
-const { FusesPlugin } = require('@electron-forge/plugin-fuses');
-const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const { FusesPlugin } = require("@electron-forge/plugin-fuses");
+const { FuseV1Options, FuseVersion } = require("@electron/fuses");
 
 module.exports = {
   packagerConfig: {
@@ -8,40 +8,46 @@ module.exports = {
   rebuildConfig: {},
   makers: [
     {
-      name: '@electron-forge/maker-squirrel',
-      config: {},
+      name: "@electron-forge/maker-squirrel",
+      config: {
+        out: "out/make/windows-latest"
+      },
     },
     {
-      name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      name: "@electron-forge/maker-dmg",
+      config: {
+        out: "out/make/macos-latest",
+      }
     },
     {
-      name: '@electron-forge/maker-deb',
-      config: {},
-    },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
-    },
+      name: '@electron-forge/maker-snap',
+      config: {
+        out: "out/make/ubuntu-latest",
+        features: {
+          audio: true,
+          webgl: true
+        }
+      }
+    }
   ],
   plugins: [
     {
-      name: '@electron-forge/plugin-auto-unpack-natives',
+      name: "@electron-forge/plugin-auto-unpack-natives",
       config: {},
     },
     {
-      name: '@electron-forge/plugin-webpack',
+      name: "@electron-forge/plugin-webpack",
       config: {
-        mainConfig: './webpack.main.config.js',
+        mainConfig: "./webpack.main.config.js",
         renderer: {
-          config: './webpack.renderer.config.js',
+          config: "./webpack.renderer.config.js",
           entryPoints: [
             {
-              html: './src/index.html',
-              js: './src/renderer.js',
-              name: 'main_window',
+              html: "./src/index.html",
+              js: "./src/renderer.js",
+              name: "main_window",
               preload: {
-                js: './src/preload.js',
+                js: "./src/preload.js",
               },
             },
           ],

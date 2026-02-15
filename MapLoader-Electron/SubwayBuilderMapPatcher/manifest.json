@@ -1,8 +1,0 @@
-{
-    "id": "com.kronifer.maploader",
-    "name": "Map Loader",
-    "description": "Patcher-like mod that allows easy loading of custom maps.",
-    "version": "1.0.0",
-    "author": { "name": "Kronifer" },
-    "main": "index.js"
-}
