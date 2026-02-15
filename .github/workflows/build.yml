@@ -25,7 +25,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install snapd
-          sudo snap install snapcraft --classic
+          sudo snap install snapcraft --classic --channel=7.x
       - name: Build Executables
         working-directory: "./MapLoader-Electron"
         run: "npm run make"
