@@ -20,6 +20,12 @@ jobs:
       - name: Install Dependencies
         working-directory: "./MapLoader-Electron"
         run: "npm install"
+      - name: Install Snapcraft
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install snapd
+          sudo snap install snapcraft --classic
       - name: Build Executables
         working-directory: "./MapLoader-Electron"
         run: "npm run make"
