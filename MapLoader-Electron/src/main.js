@@ -300,7 +300,7 @@ ipcMain.handle("import-new-map", async (event, args) => {
         }
         let writeStream = s.pipe(
           fs.createWriteStream(
-            path.join(app.getPath("userData"), "tiles", f.path),
+            path.join(app.getPath("userData"), "tiles", `${config.code}.pmtiles`),
             {},
           ),
         );

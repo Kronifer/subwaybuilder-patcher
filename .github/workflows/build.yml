@@ -20,12 +20,13 @@ jobs:
       - name: Install Dependencies
         working-directory: "./MapLoader-Electron"
         run: "npm install"
-      - name: Install Snapcraft
+      - name: Install Snapcraft and Multipass
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
           sudo apt install snapd
           sudo snap install snapcraft --classic --channel=7.x
+          sudo snap install multipass --classic
       - name: Build Executables
         working-directory: "./MapLoader-Electron"
         run: "npm run make"
