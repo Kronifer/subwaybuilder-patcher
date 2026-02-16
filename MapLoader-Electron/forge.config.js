@@ -15,14 +15,18 @@ module.exports = {
       name: "@electron-forge/maker-dmg",
       config: {}
     },
+    //{
+    //  name: '@electron-forge/maker-flatpak',
+    //  config: {
+    //    options: {
+    //      id: "subwaybuilder-maploader"
+    //    }
+    //  }
+    //}
     {
-      name: '@electron-forge/maker-snap',
-      config: {
-        features: {
-          audio: true,
-          webgl: true
-        }
-      }
+      name: "@electron-forge/maker-zip",
+      platforms: ["linux"],
+      config: { arch: "x64" }
     }
   ],
   plugins: [
