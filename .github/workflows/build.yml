@@ -37,5 +37,11 @@ jobs:
         with:
           name: ${{matrix.os}} Release
           path: ./MapLoader-Electron/out/make
+      - name: Upload Logs (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: Ubuntu Logs
+          path: /home/runner/.local/state/snapcraft/log
           
           
