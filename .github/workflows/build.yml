@@ -3,15 +3,13 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
       - mod_beta
 jobs:
   build:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        # os: [macos-latest, windows-latest, macos-15-intel]
-        os: [ubuntu-latest]
+        os: [macos-latest, windows-latest, macos-15-intel, ubuntu-latest]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.2
@@ -22,14 +20,6 @@ jobs:
       - name: Install Dependencies
         working-directory: "./MapLoader-Electron"
         run: "npm install"
-      - name: Install Snapcraft and Multipass
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install snapd
-          sudo snap install snapcraft --classic --channel=7.x
-          sudo snap install multipass --classic
-          multipass launch
       - name: Build Executables
         id: buildstep
         continue-on-error: true
@@ -41,11 +31,4 @@ jobs:
         with:
           name: ${{matrix.os}} Release
           path: ./MapLoader-Electron/out/make
-      - name: Upload Logs (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v6.0.0
-        with:
-          name: Ubuntu Logs
-          path: /home/runner/.local/state/snapcraft/log
-          
-          
+     
