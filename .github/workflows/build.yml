@@ -1,12 +1,17 @@
 name: Build Installers
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - mod_beta
 jobs:
   build:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, macos-15-intel]
+        # os: [macos-latest, windows-latest, macos-15-intel]
+        os: [ubuntu-latest]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.2
