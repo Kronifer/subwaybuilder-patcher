@@ -30,16 +30,18 @@ jobs:
           sudo snap install snapcraft --classic --channel=7.x
           sudo snap install multipass --classic
       - name: Build Executables
+        id: buildstep
+        continue-on-error: true
         working-directory: "./MapLoader-Electron"
         run: "npm run make"
       - name: Upload Artifacts
+        if: ${{steps.buildstep.outcome == 'success' }}
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ${{matrix.os}} Release
           path: ./MapLoader-Electron/out/make
       - name: Upload Logs (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        continue-on-error: true
         uses: actions/upload-artifact@v6.0.0
         with:
           name: Ubuntu Logs
