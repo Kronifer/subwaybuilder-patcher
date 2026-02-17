@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v6.0.0
         with:
           name: ${{matrix.os}} Release
-          path: ./MapLoader-Electron/out/make/squirrel.windows/x64/*.Executables
+          path: ./MapLoader-Electron/out/make/squirrel.windows/x64/*.exe
       - name: Upload Artifacts (macOS)
         if: ${{steps.buildstep.outcome == 'success' && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')}}
         uses: actions/upload-artifact@v6.0.0
