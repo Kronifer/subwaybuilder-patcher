@@ -37,22 +37,55 @@ function MainPage() {
 
   async function handleAddMap() {
     let appDataPath = window.localStorage.getItem("appDataPath");
-    setShowLoadingMapDialog(true);
-    let result = await window.electron.importNewMap(
-      appDataPath,
-      mapRows.map((r) => r.code),
-    );
-    setShowLoadingMapDialog(false);
-    console.log(result);
-    if (result.status === "success") {
-      let newMapRows = [...mapRows];
-      newMapRows.push(result.config);
-      setMapRows(newMapRows);
-      window.localStorage.setItem("mapRows", JSON.stringify(newMapRows));
+    let mapPathResult = await window.electron.selectMaps();
+    if (mapPathResult.status !== "success") {
+      spawnSnackbar(mapPathResult.message, 3000);
+      return;
     }
-    setTimeout(() => {
-      spawnSnackbar(result.message, 3000);
-    }, 200);
+    let mapPackagePaths = mapPathResult.filePaths;
+    setMapInstallCount(mapPackagePaths.length);
+    setMapInstallCounter(0);
+    setShowLoadingMapDialog(true);
+    let results = [];
+    for (let mapPackagePath of mapPackagePaths) {
+      setMapInstallCounter((prev) => prev + 1);
+      let result = await window.electron.importNewMap(
+        appDataPath,
+        mapRows.map((r) => r.code),
+        mapPackagePath,
+      );
+      if (result.status === "success") {
+        let newMapRows = [...mapRows];
+        newMapRows.push(result.config);
+        setMapRows(newMapRows);
+        window.localStorage.setItem("mapRows", JSON.stringify(newMapRows));
+      }
+      results.push([mapPackagePath.replaceAll("\\", "/").split("/").pop(), result]);
+    }
+    setShowLoadingMapDialog(false);
+    let allSuccess = results.every((r) => r[1].status === "success");
+    if (allSuccess) {
+      setTimeout(() => {
+        spawnSnackbar("All maps imported successfully!", 3000);
+      }, 200);
+    } else {
+      let logs = "";
+      results.forEach((r) => {
+        if (r[1].status !== "success") {
+          logs += `Failed to import map with filename ${r[0]}. Error: ${r[1].message}\n\n`;
+        }
+      });
+      let result = window.electron.writeLogFile(logs, "map_import_errors.log");
+      if (result.status === "success") {
+        setTimeout(() => {
+          spawnSnackbar("Maps with the following filenames failed to import: " + results.filter((r) => r[1].status !== "success").map((r) => r[0]).join(", ") + ". Please check the logfile at " + result.filepath + ".", 5000);
+        }, 200);
+      } else {
+        setTimeout(() => {
+          spawnSnackbar("Maps with the following filenames failed to import: " + results.filter((r) => r[1].status !== "success").map((r) => r[0]).join(", ") + ". Could not write logs.", 5000);
+        }, 200);
+      }
+    }
   }
 
   function removeMap(mapCode) {
@@ -96,6 +129,8 @@ function MainPage() {
     React.useState(false);
   let [showConfirmGameExecPathDialog, setShowConfirmGameExecPathDialog] =
     React.useState(false);
+  let [mapInstallCount, setMapInstallCount] = React.useState(0);
+  let [mapInstallCounter, setMapInstallCounter] = React.useState(0);
 
   function spawnSnackbar(message, duration) {
     setSnackbarMessage(message);
@@ -276,7 +311,7 @@ function MainPage() {
               <CircularProgress size="3rem" />
             </div>
             <DialogContentText>
-              <Typography variant="subtitle1">Importing Map...</Typography>
+              <Typography variant="subtitle1">Importing Map ({mapInstallCounter}/{mapInstallCount})</Typography>
             </DialogContentText>
           </DialogContent>
         </Dialog>

@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
 const unzipper = require("unzipper");
 const zlib = require("node:zlib");
+const tar = require("tar");
 const fs = require("node:fs");
 const request = require("request");
 const { spawn } = require("child_process");
@@ -9,6 +10,7 @@ const { spawn } = require("child_process");
 if (require("electron-squirrel-startup")) {
   app.quit();
 }
+import { generateThumbnail } from "./utils/create_thumbnail.js";
 
 const createWindow = () => {
   // Create the browser window.
@@ -108,42 +110,30 @@ app.whenReady().then(() => {
           .then((res) => res.json())
           .then((data) => {
             let tag = data.tag_name;
-            unzipper.Open.url(
-              request,
-              `https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles_${tag.replace("v", "")}_Linux_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`,
-            ).then((d) => {
-              let file = d.files.find((f) => f.path === "pmtiles");
-              if (file) {
-                file
-                  .stream()
-                  .pipe(
-                    fs.createWriteStream(
-                      path.join(app.getPath("userData"), "pmtiles"),
-                      {},
-                    ),
-                  )
-                  .on("finish", () => {
-                    console.log("Finished writing pmtiles");
-                  })
-                  .on("error", (err) => {
-                    console.error("Error writing pmtiles:", err);
-                  });
-              }
+            fetch(`https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles_${tag.replace("v", "")}_Linux_${process.arch === "x64" ? "x86_64" : "arm64"}.tar.gz`).then((res) => {
+              res.body.pipeTo(tar.x({
+                cwd: app.getPath("userData"),
+                filter: (path) => path.endsWith("pmtiles")}
+              )).on("finish", () => {
+                console.log("Finished writing pmtiles");
+              });
+            }).catch((err) => {
+              console.error("Error fetching pmtiles:", err);
             });
           });
-      }
+        }
       break;
     default:
       console.error("Unsupported platform: " + process.platform);
   }
+});
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -188,170 +178,162 @@ ipcMain.on("open-file-dialog", (event) => {
     });
 });
 
-ipcMain.handle("import-new-map", async (event, args) => {
-  if (args.length < 2) {
-    return Promise.resolve({
-      status: "err",
-      message: "Must supply app data path and list of map codes",
-    });
-  }
+ipcMain.handle("select-map-packages", async (event) => {
   let result = await dialog.showOpenDialog({
-    properties: ["openFile"],
-    filters: [{ name: "Packaged Map", extensions: ["zip"] }],
+    properties: ["openFile", "multiSelections"],
+    filters: [{ name: "Map Packages", extensions: ["zip"] }],
   });
   if (result.canceled) {
     return Promise.resolve({ status: "err", message: "User cancelled" });
   } else {
-    let filePath = result.filePaths[0];
-    let d = await unzipper.Open.file(filePath);
-    let filesFound = [];
-    let config = null;
-    for (let i = 0; i < d.files.length; i++) {
-      let file = d.files[i];
-      if (file.path === "config.json") {
-        filesFound.push("config.json");
-        config = file;
+    return {
+      status: "success",
+      message: "Map packages selected successfully!",
+      filePaths: result.filePaths,
+    }
+  }
+});
+
+ipcMain.handle("import-new-map", async (event, args) => {
+  if (args.length < 3) {
+    return Promise.resolve({
+      status: "err",
+      message: "Must supply app data path, list of existing map codes, and path to map package",
+    });
+  }
+  let filePath = args[2];
+  let d = await unzipper.Open.file(filePath);
+  let filesFound = [];
+  let config = null;
+  let thumbnailFound = false;
+  for (let i = 0; i < d.files.length; i++) {
+    let file = d.files[i];
+    if (file.path === "config.json") {
+      filesFound.push("config.json");
+      config = file;
+    }
+    if (file.path == "roads.geojson") {
+      filesFound.push("roads.geojson");
+    } else if (file.path === "runways_taxiways.geojson") {
+      filesFound.push("runways_taxiways.geojson");
+    } else if (file.path === "demand_data.json") {
+      filesFound.push("demand_data.json");
+    } else if (file.path.endsWith(".pmtiles")) {
+      filesFound.push("tiles");
+    } else if (file.path === "buildings_index.json") {
+      filesFound.push("buildings_index.json");
+    }
+    else if (file.path.endsWith(".svg")) {
+      thumbnailFound = true;
+    }
+    if (thumbnailFound && filesFound.length == 6) {
+      break;
+    }
+  }
+  if (filesFound.length < 6) {
+    console.log(filesFound);
+    return Promise.resolve({
+      status: "err",
+      message:
+        "The selected map package is missing the following required files: " +
+        [
+          "roads.geojson",
+          "runways_taxiways.geojson",
+          "demand_data.json",
+          "buildings_index.json",
+          "config.json",
+          "tiles",
+        ]
+          .filter((f) => !filesFound.includes(f))
+          .join(", "),
+    });
+  }
+  let buffer = await config.buffer();
+  config = JSON.parse(buffer.toString());
+  if (
+    config.name === undefined ||
+    config.creator === undefined ||
+    config.version === undefined ||
+    config.description === undefined ||
+    config.population === undefined ||
+    config.code === undefined ||
+    config.initialViewState === undefined
+  ) {
+    return Promise.resolve({
+      status: "err",
+      message:
+        "The config.json file is missing the following required fields: " +
+        [
+          "name",
+          "creator",
+          "version",
+          "description",
+          "population",
+          "code",
+          "initialViewState",
+        ]
+          .filter((f) => config[f] === undefined)
+          .join(", "),
+    });
+  }
+  let citiesList = fs.readdirSync(path.join(args[0], "cities", "data"));
+  citiesList = citiesList.filter(f => !args[1].includes(f));
+  let mapCode = config.code;
+  console.log("Checking if map code " + mapCode + " already exists in cities/data and in currently loaded maps");
+  if (args[1].includes(mapCode)) {
+    return Promise.resolve({
+      status: "err",
+      message:
+        "A map with the code " +
+        mapCode +
+        " already exists. Please choose a different map code or delete the existing map.",
+    });
+  } else if(citiesList.includes(mapCode)) {
+    console.log("Map code " + mapCode + " already exists in cities/data.");
+    await dialog.showMessageBox({
+      type: "warning",
+      title: "Map already exists",
+      message: "A vanilla map with the code " + mapCode + " already exists, and will not be overwritten. If you really want to install this, you can do so manually yourself, but know that you may brick the vanilla map.",
+      buttons: ["Ok"],
+    });
+    return Promise.resolve({
+      status: "err",
+      message: "Vanilla map already exists with this code."
+    });
+  }
+  let mapPath = path.join(args[0], "cities", "data", mapCode);
+  if (!fs.existsSync(mapPath)) {
+    fs.mkdirSync(mapPath, { recursive: true });
+  }
+  let promises = [];
+  d.files.forEach((f) => {
+    if (f.path === "config.json") {
+      return;
+    }
+    let s = f.stream();
+    if (f.path.endsWith(".pmtiles")) {
+      if (!fs.existsSync(path.join(app.getPath("userData"), "tiles"))) {
+        fs.mkdirSync(path.join(app.getPath("userData"), "tiles"));
       }
-      if (file.path == "roads.geojson") {
-        filesFound.push("roads.geojson");
-      } else if (file.path === "runways_taxiways.geojson") {
-        filesFound.push("runways_taxiways.geojson");
-      } else if (file.path === "demand_data.json") {
-        filesFound.push("demand_data.json");
-      } else if (file.path.endsWith(".pmtiles")) {
-        filesFound.push("tiles");
-      } else if (file.path === "buildings_index.json") {
-        filesFound.push("buildings_index.json");
-      }
-      if (filesFound.length == 6) {
-        break;
-      }
-    }
-    if (filesFound.length < 6) {
-      console.log(filesFound);
-      return Promise.resolve({
-        status: "err",
-        message:
-          "The selected map package is missing the following required files: " +
-          [
-            "roads.geojson",
-            "runways_taxiways.geojson",
-            "demand_data.json",
-            "buildings_index.json",
-            "config.json",
-            "tiles",
-          ]
-            .filter((f) => !filesFound.includes(f))
-            .join(", "),
-      });
-    }
-    let buffer = await config.buffer();
-    config = JSON.parse(buffer.toString());
-    if (
-      config.name === undefined ||
-      config.creator === undefined ||
-      config.version === undefined ||
-      config.description === undefined ||
-      config.population === undefined ||
-      config.code === undefined ||
-      config.initialViewState === undefined
-    ) {
-      return Promise.resolve({
-        status: "err",
-        message:
-          "The config.json file is missing the following required fields: " +
-          [
-            "name",
-            "creator",
-            "version",
-            "description",
-            "population",
-            "code",
-            "initialViewState",
-          ]
-            .filter((f) => config[f] === undefined)
-            .join(", "),
-      });
-    }
-    let mapCode = config.code;
-    if (args[1].includes(mapCode)) {
-      return Promise.resolve({
-        status: "err",
-        message:
-          "A map with the code " +
-          mapCode +
-          " already exists. Please choose a different map code or delete the existing map.",
-      });
-    }
-    let mapPath = path.join(args[0], "cities", "data", mapCode);
-    if (!fs.existsSync(mapPath)) {
-      fs.mkdirSync(mapPath, { recursive: true });
-    }
-    let wroteSuccessfully = true;
-    let promises = [];
-    d.files.forEach((f) => {
-      if (f.path === "config.json") {
-        return;
-      }
-      let s = f.stream();
-      if (f.path.endsWith(".pmtiles")) {
-        if (!fs.existsSync(path.join(app.getPath("userData"), "tiles"))) {
-          fs.mkdirSync(path.join(app.getPath("userData"), "tiles"));
-        }
-        let writeStream = s.pipe(
-          fs.createWriteStream(
-            path.join(app.getPath("userData"), "tiles", `${config.code}.pmtiles`),
-            {},
-          ),
-        );
-        promises.push(
-          new Promise((resolve, reject) => {
-            writeStream.on("finish", () => {
-              console.log(`Finished writing ${f.path}`);
-              resolve();
-            });
-            writeStream.on("error", (err) => {
-              console.error(`Error writing ${f.path}:`, err);
-              wroteSuccessfully = false;
-              reject(err);
-            });
-          }),
-        );
-        writeStream.on("finish", () => {
-          console.log(`Finished writing ${f.path}`);
-        });
-        writeStream.on("error", (err) => {
-          console.error(`Error writing ${f.path}:`, err);
-          wroteSuccessfully = false;
-        });
-      } else if (f.path.endsWith(".svg")) {
-        if (
-          !fs.existsSync(path.join(appDataPath, "public", "data", "city-maps"))
-        ) {
-          fs.mkdirSync(path.join(appDataPath, "public", "data", "city-maps"), {
-            recursive: true,
+      let writeStream = s.pipe(
+        fs.createWriteStream(
+          path.join(app.getPath("userData"), "tiles", `${config.code}.pmtiles`),
+          {},
+        ),
+      );
+      promises.push(
+        new Promise((resolve, reject) => {
+          writeStream.on("finish", () => {
+            console.log(`Finished writing ${f.path}`);
+            resolve();
           });
-        }
-        let writeStream = s.pipe(
-          fs.createWriteStream(
-            path.join(
-              path.join(appDataPath, "public", "data", "city-maps"),
-              `${config.code}.svg`,
-            ),
-            {},
-          ),
-        );
-        writeStream.on("finish", () => {
-          console.log(`Finished writing ${f.path}`);
-        });
-        writeStream.on("error", (err) => {
-          console.error(`Error writing ${f.path}:`, err);
-          wroteSuccessfully = false;
-        });
-      }
-      let writeStream = s
-        .pipe(zlib.createGzip())
-        .pipe(fs.createWriteStream(path.join(mapPath, f.path + ".gz"), {}));
+          writeStream.on("error", (err) => {
+            console.error(`Error writing ${f.path}:`, err);
+            wroteSuccessfully = false;
+            reject(err);
+          });
+        }),
+      );
       writeStream.on("finish", () => {
         console.log(`Finished writing ${f.path}`);
       });
@@ -359,15 +341,92 @@ ipcMain.handle("import-new-map", async (event, args) => {
         console.error(`Error writing ${f.path}:`, err);
         wroteSuccessfully = false;
       });
-    });
-    return Promise.all(promises).then(() => {
-      return Promise.resolve({
-        status: "success",
-        message: "Map imported successfully!",
-        config: config,
+      return;
+    } else if (f.path.endsWith(".svg")) {
+      if (
+        !fs.existsSync(path.join(args[0], "public", "data", "city-maps"))
+      ) {
+        fs.mkdirSync(path.join(args[0], "public", "data", "city-maps"), {
+          recursive: true,
+        });
+      }
+      let writeStream = s.pipe(
+        fs.createWriteStream(
+          path.join(
+            path.join(args[0], "public", "data", "city-maps"),
+            `${config.code}.svg`,
+          ),
+          {},
+        ),
+      );
+      writeStream.on("finish", () => {
+        console.log(`Finished writing ${f.path}`);
       });
+      writeStream.on("error", (err) => {
+        console.error(`Error writing ${f.path}:`, err);
+        wroteSuccessfully = false;
+      });
+      return;
+    }
+    let writeStream = s
+      .pipe(zlib.createGzip())
+      .pipe(fs.createWriteStream(path.join(mapPath, f.path + ".gz"), {}));
+    writeStream.on("finish", () => {
+      console.log(`Finished writing ${f.path}`);
     });
+    writeStream.on("error", (err) => {
+      console.error(`Error writing ${f.path}:`, err);
+      wroteSuccessfully = false;
+    });
+  });
+  if(config.thumbnailBbox && !thumbnailFound) {
+    console.log("No thumbnail found, generating one using the bbox in config.json");
+    let pmtilesExecPath = path.join(
+      app.getPath("userData"),
+      process.platform == "win32" ? "pmtiles.exe" : "pmtiles",
+    );
+    let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", "8080", "--cors=*"]);
+    let thumbnail = await generateThumbnail(config.code, config);
+    if(thumbnail instanceof Error) {
+      console.error("Error generating thumbnail:", thumbnail);
+    } else {
+      if(!fs.existsSync(path.join(args[0], "public", "data", "city-maps"))) {
+        fs.mkdirSync(path.join(args[0], "public", "data", "city-maps"), {
+          recursive: true,
+        });
+      }
+      let s = fs.createWriteStream(path.join(args[0], "public", "data", "city-maps", `${config.code}.svg`));
+      s.write(thumbnail, (err) => {
+        if (err) {
+          console.error("Error writing generated thumbnail:", err);
+          s.destroy(err);
+        }
+        else {
+          s.end();
+        }
+      });
+      let p = new Promise((resolve, reject) => {
+        s.on("finish", () => {
+          console.log("Finished writing generated thumbnail");
+          pmtiles.kill();
+          console.log("rizz");
+          resolve();
+        });
+        s.on("error", (err) => {
+          console.error("Error writing generated thumbnail:", err);
+          reject(err);
+        });
+      });
+      promises.push(p);
+    }
   }
+  return Promise.all(promises).then(() => {
+    return Promise.resolve({
+      status: "success",
+      message: "Map imported successfully!",
+      config: config,
+    });
+  });
 });
 
 ipcMain.on("delete-map", (event, args) => {
@@ -398,8 +457,62 @@ ipcMain.on("delete-map", (event, args) => {
   }
 });
 
+ipcMain.on("write-log-file", (event, args) => {
+  if (args.length < 2) {
+    event.returnValue = {
+      status: "err",
+      message: "Not enough arguments provided",
+    };
+    return;
+  }
+  let message = args[0];
+  let filename = args[1];
+  if(!fs.existsSync(path.join(app.getPath("userData"), "logs"))) {
+    fs.mkdirSync(path.join(app.getPath("userData"), "logs"));
+  }
+  try {
+    fs.writeFileSync(path.join(app.getPath("userData"), "logs", filename), message + "\n");
+    event.returnValue = {
+      status: "success",
+      message: "Log file written successfully",
+      filepath: path.join(app.getPath("userData"), "logs", filename),
+    };
+  } catch (err) {
+    console.error("Error writing log file:", err);
+    event.returnValue = {
+      status: "err",
+      message: "Error writing log file",
+    };
+  }
+});
+
+
 const MOD_CONTENTS = `
 const config = \${REPLACE};
+function getFlagEmoji (countryCode) {
+	let codePoints = countryCode.toUpperCase().split('').map(char =>  127397 + char.charCodeAt());
+	return String.fromCodePoint(...codePoints);
+}
+
+function getCountryName(countryCode) {
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    return regionNames.of(countryCode.toUpperCase());
+}
+
+function generateTabs(places) {
+  let tabs = {};
+  places.forEach(place => {
+    if(place.country === undefined || place.country.toUpperCase() === "US" || place.country.toUpperCase() === "GB") { // don't make tabs for these, we will have to do these on an upcoming update
+      return;
+    }
+    if(tabs.hasOwnProperty(place.country)) {
+      tabs[place.country].push(place.code);
+    } else {
+      tabs[place.country] = [place.code];
+    }
+  });
+  return tabs;
+}
 
 config.places.forEach(async place => {
     let publicDir = await window.electron.getModsFolder();
@@ -452,6 +565,16 @@ config.places.forEach(async place => {
         roads: \`/data/\${place.code}/roads.geojson\`,
         runwaysTaxiways: \`/data/\${place.code}/runways_taxiways.geojson\`,
     })
+    let tabs = generateTabs(config.places);
+    console.log(tabs);
+    Object.entries(tabs).forEach(([country, codes]) => {
+        window.SubwayBuilderAPI.cities.registerTab({
+          id: country,
+          name: getCountryName(country),
+          emoji: getFlagEmoji(country),
+          cityCodes: codes,
+        });
+    });
 })`;
 
 const manifest = {

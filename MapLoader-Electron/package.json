@@ -1,8 +1,8 @@
 {
   "name": "subwaybuilder-mapmanager",
   "productName": "subwaybuilder-mapmanager",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "version": "0.2.0",
+  "description": "Manages the installation of custom maps for Subway Builder.",
   "main": ".webpack/main",
   "private": true,
   "scripts": {
@@ -46,10 +46,15 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/roboto": "^5.2.9",
+    "@mapbox/sphericalmercator": "^2.0.2",
+    "@mapbox/vector-tile": "^2.0.4",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.8",
+    "@turf/turf": "^7.3.4",
     "electron-squirrel-startup": "^1.0.1",
+    "geojson2svg": "^2.0.3",
     "request": "^2.88.2",
+    "tar": "^7.5.9",
     "unzipper": "^0.12.3"
   }
 }
