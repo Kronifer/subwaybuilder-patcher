@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - mod_beta
+    tags:
+      - 'v*.*.*'
 
 permissions:
   contents: write
@@ -53,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6.0.2
       - name: Download Artifacts
         uses: actions/download-artifact@v6.0.0
         with:
@@ -61,3 +65,4 @@ jobs:
         uses: softprops/action-gh-releases@v2
         with:
           files: ./dist/*
+          prerelease: true
