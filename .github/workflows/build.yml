@@ -1,9 +1,9 @@
 name: Build Installers
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - mod_beta
+  #push:
+  #  branches:
+  #    - mod_beta
 jobs:
   build:
     runs-on: ${{matrix.os}}
