@@ -1,11 +1,16 @@
 name: Build Installers
 on:
   workflow_dispatch:
-  #push:
-  #  branches:
-  #    - mod_beta
+  push:
+    branches:
+      - mod_beta
+
+permissions:
+  contents: write
+
 jobs:
   build:
+    if: github.ref_type == 'tag'
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -43,3 +48,16 @@ jobs:
         with:
           name: ${{matrix.os}} Release
           path: ./MapLoader-Electron/out/make/*.dmg
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v6.0.0
+        with:
+          path: ./dist
+      - name: Create GitHub Release
+        uses: softprops/action-gh-releases@v2
+        with:
+          files: ./dist/*

@@ -47,6 +47,7 @@ function MainPage() {
     setMapInstallCounter(0);
     setShowLoadingMapDialog(true);
     let results = [];
+    let newMapRows = [...mapRows];
     for (let mapPackagePath of mapPackagePaths) {
       setMapInstallCounter((prev) => prev + 1);
       let result = await window.electron.importNewMap(
@@ -55,7 +56,6 @@ function MainPage() {
         mapPackagePath,
       );
       if (result.status === "success") {
-        let newMapRows = [...mapRows];
         newMapRows.push(result.config);
         setMapRows(newMapRows);
         window.localStorage.setItem("mapRows", JSON.stringify(newMapRows));
