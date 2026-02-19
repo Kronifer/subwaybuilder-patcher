@@ -1,6 +1,6 @@
 {
   "name": "subwaybuilder-mapmanager",
-  "productName": "subwaybuilder-mapmanager",
+  "productName": "Subway Builder Map Manager",
   "version": "0.2.1",
   "description": "Manages the installation of custom maps for Subway Builder.",
   "main": ".webpack/main",

@@ -79,7 +79,7 @@ app.whenReady().then(() => {
             let tag = data.tag_name;
             unzipper.Open.url(
               request,
-              `https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles_${tag.replace("v", "")}_Darwin_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`,
+              `https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles-${tag.replace("v", "")}_Darwin_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`,
             ).then((d) => {
               let file = d.files.find((f) => f.path === "pmtiles");
               if (file) {
@@ -329,7 +329,6 @@ ipcMain.handle("import-new-map", async (event, args) => {
           });
           writeStream.on("error", (err) => {
             console.error(`Error writing ${f.path}:`, err);
-            wroteSuccessfully = false;
             reject(err);
           });
         }),
@@ -339,7 +338,6 @@ ipcMain.handle("import-new-map", async (event, args) => {
       });
       writeStream.on("error", (err) => {
         console.error(`Error writing ${f.path}:`, err);
-        wroteSuccessfully = false;
       });
       return;
     } else if (f.path.endsWith(".svg")) {
@@ -364,7 +362,6 @@ ipcMain.handle("import-new-map", async (event, args) => {
       });
       writeStream.on("error", (err) => {
         console.error(`Error writing ${f.path}:`, err);
-        wroteSuccessfully = false;
       });
       return;
     }
@@ -376,7 +373,6 @@ ipcMain.handle("import-new-map", async (event, args) => {
     });
     writeStream.on("error", (err) => {
       console.error(`Error writing ${f.path}:`, err);
-      wroteSuccessfully = false;
     });
   });
   if(config.thumbnailBbox && !thumbnailFound) {
