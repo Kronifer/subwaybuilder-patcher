@@ -631,7 +631,12 @@ ipcMain.on("start-game", (event, args) => {
     app.getPath("userData"),
     process.platform == "win32" ? "pmtiles.exe" : "pmtiles",
   );
-  let game = spawn(gamePath);
+  let game;
+  if(process.platform !== "darwin") {
+    game = spawn(gamePath);
+  } else {
+    game = spawn("open", ["-a", gamePath]);
+  }
   let pmtiles = spawn(pmtilesExecPath, [
     "serve",
     path.join(app.getPath("userData"), "tiles"),
