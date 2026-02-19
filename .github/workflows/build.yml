@@ -62,5 +62,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./dist/*
+          files: |
+            ./dist/macos-latest Release/*.dmg
+            ./dist/macos-15-intel Release/*.dmg
+            ./dist/windows-latest Release/*.exe
+            ./dist/ubuntu-latest Release/*.zip
           prerelease: true
