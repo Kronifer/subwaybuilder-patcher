@@ -59,6 +59,8 @@ jobs:
         uses: actions/download-artifact@v6.0.0
         with:
           path: ./dist
+      - name: Set Release Message from tag
+        run: git cat-file -p ${{github.ref_name}} | sed '1,5d' >> ./message.txt
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -68,3 +70,4 @@ jobs:
             ./dist/windows-latest Release/*.exe
             ./dist/ubuntu-latest Release/*.zip
           prerelease: contains(github.ref_name, '-beta')
+          body_path: ./message.txt
