@@ -67,4 +67,4 @@ jobs:
             ./dist/macos-15-intel Release/*.dmg
             ./dist/windows-latest Release/*.exe
             ./dist/ubuntu-latest Release/*.zip
-          prerelease: true
+          prerelease: contains(github.ref_name, '-beta')
