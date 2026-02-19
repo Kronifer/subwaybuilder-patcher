@@ -5,7 +5,7 @@ const zlib = require("node:zlib");
 const tar = require("tar");
 const fs = require("node:fs");
 const request = require("request");
-const { spawn } = require("child_process");
+const { spawn, exec } = require("child_process");
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
   app.quit();
@@ -93,6 +93,13 @@ app.whenReady().then(() => {
                   )
                   .on("finish", () => {
                     console.log("Finished writing pmtiles");
+                    exec(`chmod +x ${path.join(app.getPath("userData"), "pmtiles")}`, (err) => {
+                      if (err) {
+                        console.error("Error making pmtiles executable:", err);
+                      } else {
+                        console.log("Made pmtiles executable");
+                      }
+                    });
                   })
                   .on("error", (err) => {
                     console.error("Error writing pmtiles:", err);
