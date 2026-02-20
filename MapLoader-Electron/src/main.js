@@ -93,7 +93,7 @@ app.whenReady().then(() => {
                   )
                   .on("finish", () => {
                     console.log("Finished writing pmtiles");
-                    exec(`chmod +x ${path.join(app.getPath("userData"), "pmtiles")}`, (err) => {
+                    exec(`chmod +x ${path.join(app.getPath("userData"), "pmtiles")} && xattr -d com.apple.quarantine ${path.join(app.getPath("userData"), "pmtiles")}`, (err) => {
                       if (err) {
                         console.error("Error making pmtiles executable:", err);
                       } else {
@@ -635,15 +635,49 @@ ipcMain.on("start-game", (event, args) => {
   if(process.platform !== "darwin") {
     game = spawn(gamePath);
   } else {
-    game = spawn("open", ["-a", gamePath]);
+    game = spawn("open", ["-W", "-a", gamePath]);
   }
-  let pmtiles = spawn(pmtilesExecPath, [
-    "serve",
-    path.join(app.getPath("userData"), "tiles"),
-    "--port",
-    "8080",
-    "--cors=*",
-  ]);
+  let pmtiles;
+  try {
+    pmtiles = spawn(pmtilesExecPath, [
+      "serve",
+      path.join(app.getPath("userData"), "tiles"),
+      "--port",
+      "8080",
+      "--cors=*",
+    ]);
+  } catch (err) {
+    if(process.platform === "darwin") {
+      exec(`chmod +x ${pmtilesExecPath} && xattr -d com.apple.quarantine ${pmtilesExecPath}`, (chmodErr) => {
+        if (chmodErr) {
+          console.error("Error making pmtiles executable:", chmodErr);
+          event.returnValue = {
+            status: "err",
+            message: "Error making pmtiles executable: " + chmodErr.message,
+          };
+        } else {
+          console.log("Made pmtiles executable, trying to start it again");
+          try {
+            pmtiles = spawn(pmtilesExecPath, [
+              "serve",
+              path.join(app.getPath("userData"), "tiles"),
+              "--port",
+              "8080",
+              "--cors=*",
+            ]);
+            console.log("Started pmtiles successfully after making it executable");
+          } catch (err) {
+            console.error("Error starting pmtiles after making it executable:", err);
+            event.returnValue = {
+              status: "err",
+              message: "Error starting pmtiles after making it executable: " + err.message,
+            };
+            return;
+          }
+        }
+      });
+    }
+  }
   console.log(
     `Started game with PID ${game.pid} and pmtiles with PID ${pmtiles.pid}`,
   );
