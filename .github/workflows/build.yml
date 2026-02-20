@@ -69,5 +69,5 @@ jobs:
             ./dist/macos-15-intel Release/*.dmg
             ./dist/windows-latest Release/*.exe
             ./dist/ubuntu-latest Release/*.zip
-          prerelease: contains(github.ref_name, '-beta')
+          prerelease: ${{contains(github.ref_name, '-beta')}}
           body_path: ./message.txt
