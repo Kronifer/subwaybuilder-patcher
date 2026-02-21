@@ -2,6 +2,7 @@ const unzipper = require("unzipper");
 const tar = require("tar");
 const request = require("request");
 const { Readable } = require("node:stream");
+const { exec } = require("child_process");
 
 async function fetchLatestPMTiles() {
   let ghApiRequest = await fetch(
