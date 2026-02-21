@@ -100,6 +100,10 @@ function MainPage() {
     spawnSnackbar(result.message, 3000);
   }
 
+  function changePaths() {
+    setShowFirstRunDialog(true);
+  }
+
   function handleGenerateMod() {
     let appDataPath = window.localStorage.getItem("appDataPath");
     let result = window.electron.generateMod(mapRows, appDataPath);
@@ -337,6 +341,7 @@ function MainPage() {
           <Button variant="contained" color="info" onClick={handleStartGame}>
             Start Game
           </Button>
+          <Button variant="contained" color="error" onClick={changePaths}>Change Paths</Button>
         </div>
         <div
           style={{
