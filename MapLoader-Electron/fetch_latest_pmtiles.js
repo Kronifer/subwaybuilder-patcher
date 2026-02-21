@@ -4,10 +4,16 @@ const request = require("request");
 const { Readable } = require("node:stream");
 const { exec } = require("child_process");
 
+let authkey = process.argv[2];
+
 async function fetchLatestPMTiles() {
   let ghApiRequest = await fetch(
     "https://api.github.com/repos/protomaps/go-pmtiles/releases",
-  );
+  {
+    headers: {
+        Authorization: `Bearer ${authkey}`,
+    }
+  });
   let body = await ghApiRequest.json();
   console.log(body);
   let tag = body[0].tag_name;
