@@ -92,7 +92,7 @@ function MainPage() {
     console.log(mapCode);
     let appDataPath = window.localStorage.getItem("appDataPath");
     let result = window.electron.deleteMap(mapCode, appDataPath);
-    if (result.status === "success") {
+    if (result.status === "success" || result.message === "Map not found") {
       let newMapRows = mapRows.filter((r) => r.code !== mapCode);
       setMapRows(newMapRows);
       window.localStorage.setItem("mapRows", JSON.stringify(newMapRows));

@@ -4,6 +4,9 @@ const { FuseV1Options, FuseVersion } = require("@electron/fuses");
 module.exports = {
   packagerConfig: {
     asar: true,
+    extraResource: [
+      process.platform === "win32" ? "./pmtiles.exe" : "./pmtiles"
+    ]
   },
   rebuildConfig: {},
   makers: [

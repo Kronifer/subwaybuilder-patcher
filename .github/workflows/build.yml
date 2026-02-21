@@ -25,6 +25,9 @@ jobs:
       - name: Install Dependencies
         working-directory: "./MapLoader-Electron"
         run: "npm install"
+      - name: Download latest PMTiles Executable
+        working-directory: "./MapLoader-Electron"
+        run: "node fetch_latest_pmtiles.js"
       - name: Build Executables
         id: buildstep
         continue-on-error: true

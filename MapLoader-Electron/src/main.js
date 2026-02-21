@@ -2,9 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
 const unzipper = require("unzipper");
 const zlib = require("node:zlib");
-const tar = require("tar");
 const fs = require("node:fs");
-const request = require("request");
 const { spawn, exec } = require("child_process");
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -35,104 +33,6 @@ const createWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
-  switch (process.platform) {
-    case "win32":
-      if (!fs.existsSync(path.join(app.getPath("userData"), "pmtiles.exe"))) {
-        fetch(
-          `https://api.github.com/repos/protomaps/go-pmtiles/releases/latest`,
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            let tag = data.tag_name;
-            unzipper.Open.url(
-              request,
-              `https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles_${tag.replace("v", "")}_Windows_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`,
-            ).then((d) => {
-              let file = d.files.find((f) => f.path.endsWith(".exe"));
-              if (file) {
-                file
-                  .stream()
-                  .pipe(
-                    fs.createWriteStream(
-                      path.join(app.getPath("userData"), "pmtiles.exe"),
-                      {},
-                    ),
-                  )
-                  .on("finish", () => {
-                    console.log("Finished writing pmtiles.exe");
-                  })
-                  .on("error", (err) => {
-                    console.error("Error writing pmtiles.exe:", err);
-                  });
-              }
-            });
-          });
-      }
-      break;
-    case "darwin":
-      if (!fs.existsSync(path.join(app.getPath("userData"), "pmtiles"))) {
-        fetch(
-          `https://api.github.com/repos/protomaps/go-pmtiles/releases/latest`,
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            let tag = data.tag_name;
-            unzipper.Open.url(
-              request,
-              `https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles-${tag.replace("v", "")}_Darwin_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`,
-            ).then((d) => {
-              let file = d.files.find((f) => f.path === "pmtiles");
-              if (file) {
-                file
-                  .stream()
-                  .pipe(
-                    fs.createWriteStream(
-                      path.join(app.getPath("userData"), "pmtiles"),
-                      {},
-                    ),
-                  )
-                  .on("finish", () => {
-                    console.log("Finished writing pmtiles");
-                    exec(`chmod +x ${path.join(app.getPath("userData"), "pmtiles")} && xattr -d com.apple.quarantine ${path.join(app.getPath("userData"), "pmtiles")}`, (err) => {
-                      if (err) {
-                        console.error("Error making pmtiles executable:", err);
-                      } else {
-                        console.log("Made pmtiles executable");
-                      }
-                    });
-                  })
-                  .on("error", (err) => {
-                    console.error("Error writing pmtiles:", err);
-                  });
-              }
-            });
-          });
-      }
-      break;
-    case "linux":
-      if (!fs.existsSync(path.join(app.getPath("userData"), "pmtiles"))) {
-        fetch(
-          `https://api.github.com/repos/protomaps/go-pmtiles/releases/latest`,
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            let tag = data.tag_name;
-            fetch(`https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles_${tag.replace("v", "")}_Linux_${process.arch === "x64" ? "x86_64" : "arm64"}.tar.gz`).then((res) => {
-              res.body.pipeTo(tar.x({
-                cwd: app.getPath("userData"),
-                filter: (path) => path.endsWith("pmtiles")}
-              )).on("finish", () => {
-                console.log("Finished writing pmtiles");
-              });
-            }).catch((err) => {
-              console.error("Error fetching pmtiles:", err);
-            });
-          });
-        }
-      break;
-    default:
-      console.error("Unsupported platform: " + process.platform);
-  }
 });
 
   // On OS X it's common to re-create a window in the app when the
@@ -628,8 +528,8 @@ ipcMain.on("start-game", (event, args) => {
   }
   let gamePath = args[0];
   let pmtilesExecPath = path.join(
-    app.getPath("userData"),
-    process.platform == "win32" ? "pmtiles.exe" : "pmtiles",
+    app.isPackaged ? process.resourcesPath : __dirname + "/../../",
+    process.platform !== "win32" ? "pmtiles" : "pmtiles.exe",
   );
   let game;
   if(process.platform !== "darwin") {
@@ -637,47 +537,7 @@ ipcMain.on("start-game", (event, args) => {
   } else {
     game = spawn("open", ["-W", "-a", gamePath]);
   }
-  let pmtiles;
-  try {
-    pmtiles = spawn(pmtilesExecPath, [
-      "serve",
-      path.join(app.getPath("userData"), "tiles"),
-      "--port",
-      "8080",
-      "--cors=*",
-    ]);
-  } catch (err) {
-    if(process.platform === "darwin") {
-      exec(`chmod +x ${pmtilesExecPath} && xattr -d com.apple.quarantine ${pmtilesExecPath}`, (chmodErr) => {
-        if (chmodErr) {
-          console.error("Error making pmtiles executable:", chmodErr);
-          event.returnValue = {
-            status: "err",
-            message: "Error making pmtiles executable: " + chmodErr.message,
-          };
-        } else {
-          console.log("Made pmtiles executable, trying to start it again");
-          try {
-            pmtiles = spawn(pmtilesExecPath, [
-              "serve",
-              path.join(app.getPath("userData"), "tiles"),
-              "--port",
-              "8080",
-              "--cors=*",
-            ]);
-            console.log("Started pmtiles successfully after making it executable");
-          } catch (err) {
-            console.error("Error starting pmtiles after making it executable:", err);
-            event.returnValue = {
-              status: "err",
-              message: "Error starting pmtiles after making it executable: " + err.message,
-            };
-            return;
-          }
-        }
-      });
-    }
-  }
+  let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", "8080", "--cors=*"]);
   console.log(
     `Started game with PID ${game.pid} and pmtiles with PID ${pmtiles.pid}`,
   );
