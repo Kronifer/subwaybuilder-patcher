@@ -27,7 +27,9 @@ jobs:
         run: "npm install"
       - name: Download latest PMTiles Executable
         working-directory: "./MapLoader-Electron"
-        run: "node fetch_latest_pmtiles.js"
+        env:
+          GH_ACTION_API_KEY: ${{secrets.GH_ACTION_API_KEY}}
+        run: node fetch_latest_pmtiles.js "$GH_ACTION_API_KEY"
       - name: Build Executables
         id: buildstep
         continue-on-error: true
