@@ -1,5 +1,6 @@
 const unzipper = require("unzipper");
 const tar = require("tar");
+const request = require("request");
 const { Readable } = require("node:stream");
 
 async function fetchLatestPMTiles() {
@@ -11,11 +12,12 @@ async function fetchLatestPMTiles() {
     switch (process.platform) {
         case "win32":
             url += `_${tag.replaceAll("v", "")}_Windows_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`;
-            unzipper.Open.url(url).then(d => d.extract({ path: "./", filter: file => file.path.endsWith("pmtiles.exe") }));
+            console.log("Fetching PMTiles from " + url);
+            unzipper.Open.url(request, url).then(d => d.extract({ path: "./", filter: file => file.path.endsWith("pmtiles.exe") }));
             break
         case "darwin":
             url += `-${tag.replaceAll("v", "")}_Darwin_${process.arch === "x64" ? "x86_64" : "arm64"}.zip`;
-            unzipper.Open.url(url).then(d => d.extract({ path: "./", filter: file => file.path.endsWith("pmtiles") }));
+            unzipper.Open.url(request, url).then(d => d.extract({ path: "./", filter: file => file.path.endsWith("pmtiles") }));
             break
         default:
             url += `_${tag.replaceAll("v", "")}_Linux_${process.arch === "x64" ? "x86_64" : "arm64"}.tar.gz`;
