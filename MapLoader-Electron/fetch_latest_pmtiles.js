@@ -15,7 +15,6 @@ async function fetchLatestPMTiles() {
     }
   });
   let body = await ghApiRequest.json();
-  console.log(body);
   let tag = body[0].tag_name;
   let url = `https://github.com/protomaps/go-pmtiles/releases/download/${tag}/go-pmtiles`;
   switch (process.platform) {
