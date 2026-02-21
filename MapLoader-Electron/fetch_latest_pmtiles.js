@@ -4,7 +4,7 @@ const request = require("request");
 const { Readable } = require("node:stream");
 const { exec } = require("child_process");
 
-let authkey = process.argv[2];
+let authkey = process.env.GH_ACTION_API_KEY;
 
 async function fetchLatestPMTiles() {
   let ghApiRequest = await fetch(
