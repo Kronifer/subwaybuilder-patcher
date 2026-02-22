@@ -517,12 +517,12 @@ ipcMain.on("start-game", async (event, args) => {
   let appDataPath = args[1];
   let mapConfig = args[2];
   let openPort = await getFreePort();
-  let config = {places: mapConfig, "tile-zoom-level": 16, port: openPort};
-  if(!fs.existsSync(path.join(appDataPath, "mods", "mapPatcher"))) {
-    fs.mkdirSync(path.join(appDataPath, "mods", "mapPatcher"), { recursive: true });
+  let config = {places: mapConfig, "tile-zoom-level": 15, port: openPort};
+  if(!fs.existsSync(path.join(appDataPath, "mods", "mapLoader"))) {
+    fs.mkdirSync(path.join(appDataPath, "mods", "mapLoader"), { recursive: true });
   }
-  fs.writeFileSync(path.join(appDataPath, "mods", "mapPatcher", "manifest.json"), JSON.stringify(manifest, null, 2));
-  fs.writeFileSync(path.join(appDataPath, "mods", "mapPatcher", "index.js"), MOD_CONTENTS.replace("${REPLACE}", JSON.stringify(config)));
+  fs.writeFileSync(path.join(appDataPath, "mods", "mapLoader", "manifest.json"), JSON.stringify(manifest, null, 2));
+  fs.writeFileSync(path.join(appDataPath, "mods", "mapLoader", "index.js"), MOD_CONTENTS.replace("${REPLACE}", JSON.stringify(config)));
   let pmtilesExecPath = path.join(
     app.isPackaged ? process.resourcesPath : __dirname + "/../../",
     process.platform !== "win32" ? "pmtiles" : "pmtiles.exe",
