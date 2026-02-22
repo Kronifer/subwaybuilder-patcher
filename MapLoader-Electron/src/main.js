@@ -90,7 +90,7 @@ function openFolderDialog() {
 function handleOpenFolder() {
   let val = openFolderDialog();
   return val.then((res) => {
-    if(!fs.existsSync(path.join(res, "cities")) || !fs.existsSync(path.join(res, "Local Storage")) || !fs.existsSync(path.join(res, "IndexedDB"))) {
+    if(!fs.existsSync(path.join(res, "cities")) || !fs.existsSync(path.join(res, "Local Storage"))) {
       dialog.showMessageBoxSync({
         type: "error",
         title: "Incorrect Folder",
