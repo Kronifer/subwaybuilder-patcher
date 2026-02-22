@@ -166,7 +166,7 @@ function MainPage() {
               </li>
               <li>
                 <Typography color="textSecondary">
-                  Linux: /home/%username%/.local/share/metro-maker4
+                  Linux: /home/%username%/.config/metro-maker4
                 </Typography>
               </li>
             </ul>
