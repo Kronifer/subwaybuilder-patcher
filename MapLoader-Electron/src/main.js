@@ -72,34 +72,67 @@ app.on("window-all-closed", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
+function openFolderDialog() {
+  let d = dialog.showOpenDialog({
+    properties: ["openDirectory"],
+  });
+  return d.then((result) => {
+    if (!result.canceled) {
+      return result.filePaths[0];
+    }
+    return openFolderDialog();
+  }).catch((err) => {
+    console.log(err);
+    return null;
+  });
+}
+
+function handleOpenFolder() {
+  let val = openFolderDialog();
+  return val.then((res) => {
+    if(!fs.existsSync(path.join(res, "cities")) || !fs.existsSync(path.join(res, "Local Storage")) || !fs.existsSync(path.join(res, "IndexedDB"))) {
+      dialog.showMessageBoxSync({
+        type: "error",
+        title: "Incorrect Folder",
+        message: "The folder you selected does not appear to be a valid metro-maker4 folder. Make sure you're selecting a folder that matches the pattern shown in the instructions!",
+        buttons: ["Ok"],
+        defaultId: 1,
+        cancelId: 1
+      })
+      return handleOpenFolder();
+    } else {
+      return res;
+    }
+  }).catch((err) => {
+    console.error("Error opening folder dialog:", err);
+  });
+}
+
 ipcMain.on("open-folder-dialog", (event) => {
-  dialog
-    .showOpenDialog({
-      properties: ["openDirectory"],
-    })
-    .then((result) => {
-      if (!result.canceled) {
-        event.returnValue = result.filePaths[0];
-      }
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  handleOpenFolder().then((val) => {
+    event.returnValue = val;
+  });
 });
 
+function openFileDialog() {
+  let d = dialog.showOpenDialog({
+    properties: ["openFile"],
+  });
+  return d.then((result) => {
+    if (!result.canceled) {
+      return result.filePaths[0];
+    }
+    return openFileDialog();
+  }).catch((err) => {
+    console.log(err);
+    return null;
+  });
+}
+
 ipcMain.on("open-file-dialog", (event) => {
-  dialog
-    .showOpenDialog({
-      properties: ["openFile"],
-    })
-    .then((result) => {
-      if (!result.canceled) {
-        event.returnValue = result.filePaths[0];
-      }
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  openFileDialog().then((val) => {
+    event.returnValue = val;
+  });
 });
 
 ipcMain.handle("select-map-packages", async (event) => {
@@ -173,7 +206,15 @@ ipcMain.handle("import-new-map", async (event, args) => {
     });
   }
   let buffer = await config.buffer();
-  config = JSON.parse(buffer.toString());
+  try {
+    config = JSON.parse(buffer.toString());
+  } catch (err) {
+    console.error("Error parsing config.json:", err);
+    return Promise.resolve({
+      status: "err",
+      message: "Error parsing config.json: " + err.message,
+    });
+  }
   if (
     config.name === undefined ||
     config.creator === undefined ||
@@ -340,7 +381,14 @@ ipcMain.handle("import-new-map", async (event, args) => {
       promises.push(p);
     }
   }
-  return Promise.all(promises).then(() => {
+  return Promise.all(promises).then((err) => {
+    if(err) {
+      console.error("Error importing map:", err);
+      return {
+        status: "err",
+        message: "Error importing map: " + err.message,
+      };
+    }
     return Promise.resolve({
       status: "success",
       message: "Map imported successfully!",
@@ -529,9 +577,27 @@ ipcMain.on("start-game", async (event, args) => {
   );
   let game;
   if(process.platform !== "darwin") {
-    game = spawn(gamePath);
+    try {
+      game = spawn(gamePath);
+    } catch (err) {
+      console.error("Error starting game:", err);
+      event.returnValue = {
+        status: "err",
+        message: "Error starting game: " + err.message,
+      };
+      return;
+    }
   } else {
-    game = spawn("open", ["-W", "-a", gamePath]);
+    try {       
+      game = spawn("open", ["-W", "-a", gamePath]);
+    } catch (err) {
+      console.error("Error starting game:", err);
+      event.returnValue = {
+        status: "err",
+        message: "Error starting game: " + err.message,
+      };
+      return;
+    }
   }
   let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", openPort, "--cors=*"]);
   console.log(
