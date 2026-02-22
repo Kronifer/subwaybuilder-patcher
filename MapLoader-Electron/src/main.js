@@ -382,7 +382,7 @@ ipcMain.handle("import-new-map", async (event, args) => {
     }
   }
   return Promise.all(promises).then((err) => {
-    if(err) {
+    if(err && err.some(e => e instanceof Error)) {
       console.error("Error importing map:", err);
       return {
         status: "err",
