@@ -10,9 +10,7 @@ contextBridge.exposeInMainWorld("electron", {
   selectMaps: async () => ipcRenderer.invoke("select-map-packages"),
   deleteMap: (mapCode, appDataPath) =>
     ipcRenderer.sendSync("delete-map", [mapCode, appDataPath]),
-  generateMod: (mapConfig, appDataPath) =>
-    ipcRenderer.sendSync("generate-mod", [mapConfig, appDataPath]),
-  startGame: (gamePath) => ipcRenderer.sendSync("start-game", [gamePath]),
+  startGame: (gamePath, appDataPath, mapConfig) => ipcRenderer.sendSync("start-game", [gamePath, appDataPath, mapConfig]),
   writeLogFile: (message, filename) =>
     ipcRenderer.sendSync("write-log-file", [message, filename]),
 });

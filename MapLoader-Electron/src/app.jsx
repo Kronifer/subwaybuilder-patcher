@@ -104,15 +104,10 @@ function MainPage() {
     setShowFirstRunDialog(true);
   }
 
-  function handleGenerateMod() {
-    let appDataPath = window.localStorage.getItem("appDataPath");
-    let result = window.electron.generateMod(mapRows, appDataPath);
-    spawnSnackbar(result.message, 3000);
-  }
-
   function handleStartGame() {
     let gameExecPath = window.localStorage.getItem("gameExecPath");
-    let result = window.electron.startGame(gameExecPath);
+    let appDataPath = window.localStorage.getItem("appDataPath");
+    let result = window.electron.startGame(gameExecPath, appDataPath, mapRows);
     spawnSnackbar(result.message, 3000);
   }
 
@@ -334,9 +329,6 @@ function MainPage() {
         >
           <Button variant="contained" color="info" onClick={handleAddMap}>
             Add a Map
-          </Button>
-          <Button variant="contained" color="info" onClick={handleGenerateMod}>
-            Generate Mod
           </Button>
           <Button variant="contained" color="info" onClick={handleStartGame}>
             Start Game

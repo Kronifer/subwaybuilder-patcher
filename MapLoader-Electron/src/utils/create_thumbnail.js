@@ -10,7 +10,7 @@ const merc = new SphericalMercator({
   antimeridian: true
 });
 
-export function generateThumbnail(cityCode, cityConfig) {
+export function generateThumbnail(cityCode, cityConfig, portNumber) {
     const lon2tile = (lon, zoom) => {
         return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
     }
@@ -48,7 +48,7 @@ export function generateThumbnail(cityCode, cityConfig) {
 
     for(let x = minXTileCoord; x <= maxXTileCoord; x++) {
         for(let y = minYTileCoord; y <= maxYTileCoord; y++) {
-            let req = fetchWithRetry(`http://127.0.0.1:8080/${cityCode}/12/${x}/${y}.mvt`)
+            let req = fetchWithRetry(`http://127.0.0.1:${portNumber}/${cityCode}/12/${x}/${y}.mvt`)
             allTiles.push(new Promise((resolve) => {
                 req.then(response => response.arrayBuffer()).then(buffer => {
                     resolve({"x": x, "y": y, "buffer": buffer});

@@ -1,14 +1,31 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const yaml = require("yaml");
 const path = require("node:path");
 const unzipper = require("unzipper");
 const zlib = require("node:zlib");
 const fs = require("node:fs");
 const { spawn, exec } = require("child_process");
+const http = require("http");
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
   app.quit();
 }
 import { generateThumbnail } from "./utils/create_thumbnail.js";
+
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer();
+    server.listen(0, () => {
+      const port = server.address().port;
+      server.close(() => {
+        resolve(port);
+      });
+    });
+    server.on("error", (err) => {
+      reject(err);
+    });
+  });
+}
 
 const createWindow = () => {
   // Create the browser window.
@@ -183,8 +200,7 @@ ipcMain.handle("import-new-map", async (event, args) => {
           .join(", "),
     });
   }
-  let citiesList = fs.readdirSync(path.join(args[0], "cities", "data"));
-  citiesList = citiesList.filter(f => !args[1].includes(f));
+  let citiesList = Object.keys(yaml.parse(fs.readFileSync(path.join(args[0], "cities", "latest-cities.yml"), "utf8")).cities);
   let mapCode = config.code;
   console.log("Checking if map code " + mapCode + " already exists in cities/data and in currently loaded maps");
   if (args[1].includes(mapCode)) {
@@ -285,11 +301,12 @@ ipcMain.handle("import-new-map", async (event, args) => {
   if(config.thumbnailBbox && !thumbnailFound) {
     console.log("No thumbnail found, generating one using the bbox in config.json");
     let pmtilesExecPath = path.join(
-      app.getPath("userData"),
-      process.platform == "win32" ? "pmtiles.exe" : "pmtiles",
+      app.isPackaged ? process.resourcesPath : __dirname + "/../../",
+      process.platform !== "win32" ? "pmtiles" : "pmtiles.exe",
     );
-    let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", "8080", "--cors=*"]);
-    let thumbnail = await generateThumbnail(config.code, config);
+    let port = await getFreePort();
+    let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", port, "--cors=*"]);
+    let thumbnail = await generateThumbnail(config.code, config, port);
     if(thumbnail instanceof Error) {
       console.error("Error generating thumbnail:", thumbnail);
     } else {
@@ -389,7 +406,6 @@ ipcMain.on("write-log-file", (event, args) => {
   }
 });
 
-
 const MOD_CONTENTS = `
 const config = \${REPLACE};
 function getFlagEmoji (countryCode) {
@@ -457,7 +473,7 @@ config.places.forEach(async place => {
 
     window.SubwayBuilderAPI.map.setTileURLOverride({
         cityCode: place.code,
-        tilesUrl: \`http://127.0.0.1:8080/\${place.code}/{z}/{x}/{y}.mvt\`,
+        tilesUrl: \`http://127.0.0.1:\${config.port}/\${place.code}/{z}/{x}/{y}.mvt\`,
         foundationTilesUrl: \`https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png\`,
         maxZoom: config["tile-zoom-level"]
     });
@@ -473,7 +489,7 @@ config.places.forEach(async place => {
     Object.entries(tabs).forEach(([country, codes]) => {
         window.SubwayBuilderAPI.cities.registerTab({
           id: country,
-          name: getCountryName(country),
+          label: getCountryName(country),
           emoji: getFlagEmoji(country),
           cityCodes: codes,
         });
@@ -489,37 +505,8 @@ const manifest = {
   main: "index.js",
 };
 
-ipcMain.on("generate-mod", (event, args) => {
-  if (args.length < 2) {
-    event.returnValue = {
-      status: "err",
-      message: "Not enough arguments provided",
-    };
-    return;
-  }
-  if (!fs.existsSync(path.join(args[1], "mods", "mapLoader"))) {
-    fs.mkdirSync(path.join(args[1], "mods", "mapLoader"), { recursive: true });
-  }
-  let mapConfig = args[0];
-  let appDataPath = args[1];
-  let modContents = MOD_CONTENTS.replace(
-    "${REPLACE}",
-    JSON.stringify({ places: mapConfig, "tile-zoom-level": 15 }, null, 2),
-  );
-  let modPath = path.join(appDataPath, "mods", "mapLoader", `index.js`);
-  fs.writeFileSync(modPath, modContents);
-  fs.writeFileSync(
-    path.join(appDataPath, "mods", "mapLoader", `manifest.json`),
-    JSON.stringify(manifest, null, 2),
-  );
-  event.returnValue = {
-    status: "success",
-    message: "Mod generated successfully!",
-  };
-});
-
-ipcMain.on("start-game", (event, args) => {
-  if (args.length < 1) {
+ipcMain.on("start-game", async (event, args) => {
+  if (args.length < 3) {
     event.returnValue = {
       status: "err",
       message: "Not enough arguments provided",
@@ -527,6 +514,15 @@ ipcMain.on("start-game", (event, args) => {
     return;
   }
   let gamePath = args[0];
+  let appDataPath = args[1];
+  let mapConfig = args[2];
+  let openPort = await getFreePort();
+  let config = {places: mapConfig, "tile-zoom-level": 16, port: openPort};
+  if(!fs.existsSync(path.join(appDataPath, "mods", "mapPatcher"))) {
+    fs.mkdirSync(path.join(appDataPath, "mods", "mapPatcher"), { recursive: true });
+  }
+  fs.writeFileSync(path.join(appDataPath, "mods", "mapPatcher", "manifest.json"), JSON.stringify(manifest, null, 2));
+  fs.writeFileSync(path.join(appDataPath, "mods", "mapPatcher", "index.js"), MOD_CONTENTS.replace("${REPLACE}", JSON.stringify(config)));
   let pmtilesExecPath = path.join(
     app.isPackaged ? process.resourcesPath : __dirname + "/../../",
     process.platform !== "win32" ? "pmtiles" : "pmtiles.exe",
@@ -537,7 +533,7 @@ ipcMain.on("start-game", (event, args) => {
   } else {
     game = spawn("open", ["-W", "-a", gamePath]);
   }
-  let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", "8080", "--cors=*"]);
+  let pmtiles = spawn(pmtilesExecPath, ["serve", path.join(app.getPath("userData"), "tiles"), "--port", openPort, "--cors=*"]);
   console.log(
     `Started game with PID ${game.pid} and pmtiles with PID ${pmtiles.pid}`,
   );
