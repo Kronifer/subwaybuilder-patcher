@@ -10,3 +10,4 @@ config.js
 .DS_Store
 SubwayBuilderPatched.app
 premade_maps/*
+msg.txt

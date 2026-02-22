@@ -1,0 +1,61 @@
+{
+  "name": "subwaybuilder-mapmanager",
+  "productName": "Subway Builder Map Manager",
+  "version": "1.0.1",
+  "description": "Manages the installation of custom maps for Subway Builder.",
+  "main": ".webpack/main",
+  "private": true,
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "prettier . --write"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Kronifer",
+    "email": "44979306+Kronifer@users.noreply.github.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-react": "^7.28.5",
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-dmg": "^7.11.1",
+    "@electron-forge/maker-flatpak": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-snap": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron-forge/plugin-webpack": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
+    "@vercel/webpack-asset-relocator-loader": "^1.7.3",
+    "babel-loader": "^10.0.0",
+    "css-loader": "^6.11.0",
+    "electron": "40.4.1",
+    "node-loader": "^2.1.0",
+    "prettier": "3.8.1",
+    "style-loader": "^3.3.4"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.990.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.9",
+    "@mapbox/sphericalmercator": "^2.0.2",
+    "@mapbox/vector-tile": "^2.0.4",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
+    "@turf/turf": "^7.3.4",
+    "electron-squirrel-startup": "^1.0.1",
+    "geojson2svg": "^2.0.3",
+    "request": "^2.88.2",
+    "tar": "^7.5.9",
+    "unzipper": "^0.12.3",
+    "yaml": "^2.8.2"
+  }
+}
