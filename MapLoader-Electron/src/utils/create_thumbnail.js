@@ -25,9 +25,9 @@ export function generateThumbnail(cityCode, cityConfig, portNumber) {
     }
 
     const minXTileCoord = lon2tile(bboxToUse[0], 12);
-    const maxYTileCoord = lat2tile(bboxToUse[1], 12);
+    const maxYTileCoord = lat2tile(bboxToUse[3], 12);
     const maxXTileCoord = lon2tile(bboxToUse[2], 12);
-    const minYTileCoord = lat2tile(bboxToUse[3], 12);
+    const minYTileCoord = lat2tile(bboxToUse[1], 12);
 
     const allTiles = [];
 
